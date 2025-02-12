@@ -28,7 +28,8 @@ export const SBOMsQueryKey = "sboms";
 
 export const useFetchSBOMs = (
   params: HubRequestParams = {},
-  refetchDisabled: boolean = false
+  refetchDisabled: boolean = false,
+  disableQuery: boolean = false
 ) => {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: [SBOMsQueryKey, params],
@@ -38,6 +39,7 @@ export const useFetchSBOMs = (
         query: { ...requestParamsQuery(params) },
       }),
     refetchInterval: !refetchDisabled ? 5000 : false,
+    enabled: !disableQuery,
   });
   return {
     result: {
@@ -138,15 +140,15 @@ export const useUpdateSbomLabelsMutation = (
 };
 
 export const useFetchSbomsByPackageId = (
-  packageId: string,
+  purl: string,
   params: HubRequestParams = {}
 ) => {
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["SBOMsQueryKeysss", "by-package", packageId, params],
+    queryKey: ["SBOMsQueryKeysss", "by-package", purl, params],
     queryFn: () => {
       return listRelatedSboms({
         client,
-        query: { id: packageId, ...requestParamsQuery(params) },
+        query: { purl, ...requestParamsQuery(params) },
       });
     },
   });
