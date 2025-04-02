@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import { Link } from "react-router-dom";
 
 import { Toolbar, ToolbarContent, ToolbarItem } from "@patternfly/react-core";
@@ -55,7 +55,7 @@ export const SbomsByPackage: React.FC<SbomsByPackageProps> = ({ purl }) => {
     getHubRequestParams({
       ...tableControlState,
       hubSortFieldKeys: {},
-    })
+    }),
   );
 
   const tableControls = useTableControlProps({
@@ -75,7 +75,6 @@ export const SbomsByPackage: React.FC<SbomsByPackageProps> = ({ purl }) => {
     currentPageItems,
     propHelpers: {
       toolbarProps,
-      filterToolbarProps,
       paginationToolbarItemProps,
       paginationProps,
       tableProps,
@@ -119,7 +118,11 @@ export const SbomsByPackage: React.FC<SbomsByPackageProps> = ({ purl }) => {
             return (
               <Tbody key={item.id}>
                 <Tr {...getTrProps({ item })}>
-                  <Td width={35} {...getTdProps({ columnKey: "name" })}>
+                  <Td
+                    width={35}
+                    modifier="breakWord"
+                    {...getTdProps({ columnKey: "name" })}
+                  >
                     <Link to={`/sboms/${item.id}`}>{item.name}</Link>
                   </Td>
                   <Td

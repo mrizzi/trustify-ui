@@ -1,16 +1,16 @@
 import React from "react";
 
-import { AxiosError } from "axios";
+import type { AxiosError } from "axios";
 
-import { AdvisorySummary } from "@app/client";
-import { FilterType } from "@app/components/FilterToolbar";
 import {
   FILTER_TEXT_CATEGORY_KEY,
   TablePersistenceKeyPrefixes,
 } from "@app/Constants";
+import type { AdvisorySummary } from "@app/client";
+import { FilterType } from "@app/components/FilterToolbar";
 import {
+  type ITableControls,
   getHubRequestParams,
-  ITableControls,
   useTableControlProps,
   useTableControlState,
 } from "@app/hooks/table-controls";
@@ -20,7 +20,12 @@ import { useFetchAdvisories } from "@app/queries/advisories";
 interface IAdvisorySearchContext {
   tableControls: ITableControls<
     AdvisorySummary,
-    "identifier" | "title" | "severity" | "modified" | "vulnerabilities",
+    | "identifier"
+    | "title"
+    | "severity"
+    | "type"
+    | "modified"
+    | "vulnerabilities",
     "identifier" | "severity" | "modified",
     "" | "average_severity" | "modified",
     string
@@ -51,6 +56,7 @@ export const AdvisorySearchProvider: React.FunctionComponent<
       identifier: "ID",
       title: "Title",
       severity: "Aggregated Severity",
+      type: "Type",
       modified: "Revision",
       vulnerabilities: "Vulnerabilities",
     },
@@ -104,7 +110,7 @@ export const AdvisorySearchProvider: React.FunctionComponent<
         severity: "average_score",
         modified: "modified",
       },
-    })
+    }),
   );
 
   const tableControls = useTableControlProps({

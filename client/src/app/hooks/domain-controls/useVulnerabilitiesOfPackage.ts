@@ -1,16 +1,16 @@
 import React from "react";
 
 import {
-  ExtendedSeverity,
+  type ExtendedSeverity,
+  type VulnerabilityStatus,
   extendedSeverityFromSeverity,
-  VulnerabilityStatus,
 } from "@app/api/models";
-import { PurlAdvisory, VulnerabilityHead } from "@app/client";
+import type { PurlAdvisory, VulnerabilityHead } from "@app/client";
 import { useFetchPackageById } from "@app/queries/packages";
 
 const areVulnerabilityOfPackageEqual = (
   a: VulnerabilityOfPackage,
-  b: VulnerabilityOfPackage | FlatVulnerabilityOfPackage
+  b: VulnerabilityOfPackage | FlatVulnerabilityOfPackage,
 ) => {
   return (
     a.vulnerability.identifier === b.vulnerability.identifier &&
@@ -19,13 +19,19 @@ const areVulnerabilityOfPackageEqual = (
 };
 
 interface FlatVulnerabilityOfPackage {
-  vulnerability: VulnerabilityHead & { average_severity: ExtendedSeverity };
+  vulnerability: VulnerabilityHead & {
+    average_severity: ExtendedSeverity;
+    average_score: number;
+  };
   vulnerabilityStatus: VulnerabilityStatus;
   advisory: PurlAdvisory;
 }
 
 interface VulnerabilityOfPackage {
-  vulnerability: VulnerabilityHead & { average_severity: ExtendedSeverity };
+  vulnerability: VulnerabilityHead & {
+    average_severity: ExtendedSeverity;
+    average_score: number;
+  };
   vulnerabilityStatus: VulnerabilityStatus;
   relatedSboms: {
     advisory: PurlAdvisory;
@@ -63,13 +69,14 @@ const advisoryToModels = (advisories: PurlAdvisory[]) => {
       (advisory.status ?? [])
         .map((pkgStatus) => {
           const extendedSeverity = extendedSeverityFromSeverity(
-            pkgStatus.average_severity
+            pkgStatus.average_severity,
           );
 
           const result: FlatVulnerabilityOfPackage = {
             vulnerability: {
               ...pkgStatus.vulnerability,
               average_severity: extendedSeverity,
+              average_score: pkgStatus.average_score,
             },
             vulnerabilityStatus: pkgStatus.status as VulnerabilityStatus,
             advisory: advisory,
@@ -82,9 +89,11 @@ const advisoryToModels = (advisories: PurlAdvisory[]) => {
             return areVulnerabilityOfPackageEqual(item, current);
           });
 
+          let result: VulnerabilityOfPackage[];
+
           if (existingElement) {
             const arrayWithoutExistingItem = prev.filter(
-              (item) => !areVulnerabilityOfPackageEqual(item, existingElement)
+              (item) => !areVulnerabilityOfPackageEqual(item, existingElement),
             );
 
             const updatedItemInArray: VulnerabilityOfPackage = {
@@ -97,7 +106,7 @@ const advisoryToModels = (advisories: PurlAdvisory[]) => {
               ],
             };
 
-            return [...arrayWithoutExistingItem, updatedItemInArray];
+            result = [...arrayWithoutExistingItem, updatedItemInArray];
           } else {
             const newItemInArray: VulnerabilityOfPackage = {
               vulnerability: current.vulnerability,
@@ -108,33 +117,37 @@ const advisoryToModels = (advisories: PurlAdvisory[]) => {
                 },
               ],
             };
-            return [...prev, newItemInArray];
+            result = [...prev.slice(), newItemInArray];
           }
+
+          return result;
         }, [] as VulnerabilityOfPackage[])
     );
   });
 
-  const summary = vulnerabilities.reduce((prev, current) => {
-    const vulnStatus = current.vulnerabilityStatus;
-    const severity = current.vulnerability.average_severity;
+  const summary = vulnerabilities.reduce(
+    (prev, current) => {
+      const vulnStatus = current.vulnerabilityStatus;
+      const severity = current.vulnerability.average_severity;
 
-    const prevVulnStatusValue = prev.vulnerabilityStatus[vulnStatus];
+      const prevVulnStatusValue = prev.vulnerabilityStatus[vulnStatus];
 
-    const result: VulnerabilityOfPackageSummary = {
-      ...prev,
-      vulnerabilityStatus: {
-        ...prev.vulnerabilityStatus,
-        [vulnStatus]: {
-          total: prevVulnStatusValue.total + 1,
-          severities: {
-            ...prevVulnStatusValue.severities,
-            [severity]: prevVulnStatusValue.severities[severity] + 1,
+      const result: VulnerabilityOfPackageSummary = Object.assign(prev, {
+        vulnerabilityStatus: {
+          ...prev.vulnerabilityStatus,
+          [vulnStatus]: {
+            total: prevVulnStatusValue.total + 1,
+            severities: {
+              ...prevVulnStatusValue.severities,
+              [severity]: prevVulnStatusValue.severities[severity] + 1,
+            },
           },
         },
-      },
-    };
-    return result;
-  }, DEFAULT_SUMMARY);
+      });
+      return result;
+    },
+    { ...DEFAULT_SUMMARY } as VulnerabilityOfPackageSummary,
+  );
 
   return {
     vulnerabilities,
