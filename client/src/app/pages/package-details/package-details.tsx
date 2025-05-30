@@ -1,18 +1,20 @@
 import React from "react";
 
 import {
+  Content,
   Flex,
   FlexItem,
   PageSection,
+  Popover,
   Stack,
   StackItem,
   Tab,
+  TabAction,
   TabContent,
   TabTitleText,
   Tabs,
-  Text,
-  TextContent,
 } from "@patternfly/react-core";
+import HelpIcon from "@patternfly/react-icons/dist/esm/icons/help-icon";
 
 import { PathParam, useRouteParams } from "@app/Routes";
 import { LoadingWrapper } from "@app/components/LoadingWrapper";
@@ -44,16 +46,18 @@ export const PackageDetails: React.FC = () => {
   const vulnerabilitiesTabRef = React.createRef<HTMLElement>();
   const sbomsTabRef = React.createRef<HTMLElement>();
 
+  const sbomsPopupRef = React.createRef<HTMLElement>();
+
   return (
     <>
-      <PageSection variant="light">
+      <PageSection hasBodyWrapper={false}>
         <Stack>
           <StackItem>
-            <TextContent>
-              <Text component="h1">
+            <Content>
+              <Content component="h1">
                 {decomposedPurl?.name ?? packageId ?? ""}
-              </Text>
-            </TextContent>
+              </Content>
+            </Content>
           </StackItem>
           <StackItem>
             <Flex>
@@ -69,7 +73,7 @@ export const PackageDetails: React.FC = () => {
           </StackItem>
         </Stack>
       </PageSection>
-      <PageSection type="nav">
+      <PageSection hasBodyWrapper={false}>
         <Tabs
           mountOnEnter
           activeKey={activeTabKey}
@@ -86,12 +90,23 @@ export const PackageDetails: React.FC = () => {
           <Tab
             eventKey={1}
             title={<TabTitleText>SBOMs using package</TabTitleText>}
+            actions={
+              <>
+                <TabAction ref={sbomsPopupRef}>
+                  <HelpIcon />
+                </TabAction>
+                <Popover
+                  bodyContent={<div>A list of SBOMs using this package.</div>}
+                  triggerRef={sbomsPopupRef}
+                />
+              </>
+            }
             tabContentId="refTabSbomsSection"
             tabContentRef={sbomsTabRef}
           />
         </Tabs>
       </PageSection>
-      <PageSection>
+      <PageSection hasBodyWrapper={false}>
         <TabContent
           eventKey={0}
           id="refTabVulnerabilitiesSection"
