@@ -1,53 +1,72 @@
+import type React from "react";
+
 import type { ProgressProps } from "@patternfly/react-core";
+import {
+  SeverityCriticalIcon,
+  SeverityImportantIcon,
+  SeverityMinorIcon,
+  SeverityModerateIcon,
+  SeverityNoneIcon,
+  SeverityUndefinedIcon,
+} from "@patternfly/react-icons";
 import {
   t_global_icon_color_severity_critical_default as criticalColor,
   t_global_icon_color_severity_important_default as importantColor,
-  t_global_icon_color_severity_minor_default as lowColor,
+  t_global_icon_color_severity_minor_default as minorColor,
   t_global_icon_color_severity_moderate_default as moderateColor,
   t_global_icon_color_severity_none_default as noneColor,
-  t_global_icon_color_severity_undefined_default as unknownColor,
+  t_global_icon_color_severity_undefined_default as undefinedColor,
 } from "@patternfly/react-tokens";
 
-import type { ExtendedSeverity } from "./models";
+import type { ExtendedSeverity, Label } from "./models";
 
 type ListType = {
   [key in ExtendedSeverity]: {
     name: string;
     color: { name: string; value: string; var: string };
     progressProps: Pick<ProgressProps, "variant">;
+
+    // biome-ignore lint/suspicious/noExplicitAny:
+    icon: React.ComponentType<any>;
   };
 };
 
 export const severityList: ListType = {
   unknown: {
     name: "Unknown",
-    color: unknownColor,
+    color: undefinedColor,
     progressProps: { variant: undefined },
+    icon: SeverityUndefinedIcon,
   },
   none: {
     name: "None",
     color: noneColor,
     progressProps: { variant: undefined },
+    icon: SeverityNoneIcon,
   },
   low: {
     name: "Low",
-    color: lowColor,
+    color: minorColor,
     progressProps: { variant: undefined },
+    icon: SeverityMinorIcon,
   },
   medium: {
     name: "Medium",
     color: moderateColor,
     progressProps: { variant: "warning" },
+    icon: SeverityModerateIcon,
   },
   high: {
     name: "High",
     color: importantColor,
     progressProps: { variant: "danger" },
+    icon: SeverityImportantIcon,
   },
   critical: {
     name: "Critical",
     color: criticalColor,
     progressProps: { variant: "danger" },
+    icon: SeverityCriticalIcon,
   },
 };
 
@@ -80,3 +99,12 @@ export function compareBySeverityFn<T>(
     );
   };
 }
+
+export const joinKeyValueAsString = ({ key, value }: Label): string => {
+  return `${value ? `${key}=${value}` : `${key}`}`;
+};
+
+export const splitStringAsKeyValue = (v: string): Label => {
+  const [key, value] = v.split("=");
+  return { key, value: value ?? "" };
+};
