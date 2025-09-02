@@ -1,7 +1,14 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { generatePath, NavLink } from "react-router-dom";
 
-import { Modal, ModalBody, ModalHeader } from "@patternfly/react-core";
+import type { AxiosError } from "axios";
+
+import {
+  ButtonVariant,
+  Modal,
+  ModalBody,
+  ModalHeader,
+} from "@patternfly/react-core";
 import {
   ActionsColumn,
   Table,
@@ -12,28 +19,34 @@ import {
   Tr,
 } from "@patternfly/react-table";
 
+import { joinKeyValueAsString } from "@app/api/model-utils.ts";
+import {
+  type ExtendedSeverity,
+  extendedSeverityFromSeverity,
+} from "@app/api/models";
 import type { AdvisorySummary } from "@app/client";
+import { ConfirmDialog } from "@app/components/ConfirmDialog.tsx";
+import { LabelsAsList } from "@app/components/LabelsAsList.tsx";
+import { NotificationsContext } from "@app/components/NotificationsContext.tsx";
 import { SimplePagination } from "@app/components/SimplePagination";
 import {
   ConditionalTableBody,
   TableHeaderContentWithControls,
   TableRowContentWithControls,
 } from "@app/components/TableControls";
-import { useDownload } from "@app/hooks/domain-controls/useDownload";
-
-import {
-  type ExtendedSeverity,
-  extendedSeverityFromSeverity,
-} from "@app/api/models";
 import { VulnerabilityGallery } from "@app/components/VulnerabilityGallery";
+import { useDownload } from "@app/hooks/domain-controls/useDownload";
+import { useDeleteAdvisoryMutation } from "@app/queries/advisories.ts";
+import { Paths } from "@app/Routes";
 import { formatDate } from "@app/utils/utils";
 
-import { joinKeyValueAsString } from "@app/api/model-utils";
-import { LabelsAsList } from "@app/components/LabelsAsList";
 import { AdvisorySearchContext } from "./advisory-context";
 import { AdvisoryEditLabelsForm } from "./components/AdvisoryEditLabelsForm";
+import { advisoryDeleteDialogProps } from "@app/Constants";
 
 export const AdvisoryTable: React.FC = () => {
+  const { pushNotification } = React.useContext(NotificationsContext);
+
   const { isFetching, fetchError, totalItemCount, tableControls } =
     React.useContext(AdvisorySearchContext);
 
@@ -61,6 +74,29 @@ export const AdvisoryTable: React.FC = () => {
   const closeEditLabelsModal = () => {
     setEditLabelsModalState(null);
   };
+
+  // Delete action
+
+  const [advisoryToDelete, setAdvisoryToDelete] =
+    React.useState<AdvisorySummary | null>(null);
+
+  const onDeleteAdvisorySuccess = (advisory: AdvisorySummary) => {
+    setAdvisoryToDelete(null);
+    pushNotification({
+      title: `The Advisory ${advisory.identifier} was deleted`,
+      variant: "success",
+    });
+  };
+
+  const onDeleteAdvisoryError = (_error: AxiosError) => {
+    pushNotification({
+      title: "Error occurred while deleting the Advisory",
+      variant: "danger",
+    });
+  };
+
+  const { mutate: deleteAdvisory, isPending: isDeletingAdvisory } =
+    useDeleteAdvisoryMutation(onDeleteAdvisorySuccess, onDeleteAdvisoryError);
 
   return (
     <>
@@ -120,7 +156,11 @@ export const AdvisoryTable: React.FC = () => {
                         rowIndex,
                       })}
                     >
-                      <NavLink to={`/advisories/${item.uuid}`}>
+                      <NavLink
+                        to={generatePath(Paths.advisoryDetails, {
+                          advisoryId: item.uuid,
+                        })}
+                      >
                         {item.document_id}
                       </NavLink>
                     </Td>
@@ -180,15 +220,19 @@ export const AdvisoryTable: React.FC = () => {
                             },
                           },
                           {
-                            isSeparator: true,
-                          },
-                          {
                             title: "Download",
                             onClick: () => {
                               downloadAdvisory(
                                 item.uuid,
                                 `${item.identifier}.json`,
                               );
+                            },
+                          },
+                          { isSeparator: true },
+                          {
+                            title: "Delete",
+                            onClick: () => {
+                              setAdvisoryToDelete(item);
                             },
                           },
                         ]}
@@ -222,6 +266,23 @@ export const AdvisoryTable: React.FC = () => {
           )}
         </ModalBody>
       </Modal>
+
+      <ConfirmDialog
+        {...advisoryDeleteDialogProps(advisoryToDelete)}
+        inProgress={isDeletingAdvisory}
+        titleIconVariant="warning"
+        isOpen={!!advisoryToDelete}
+        confirmBtnVariant={ButtonVariant.danger}
+        confirmBtnLabel="Delete"
+        cancelBtnLabel="Cancel"
+        onCancel={() => setAdvisoryToDelete(null)}
+        onClose={() => setAdvisoryToDelete(null)}
+        onConfirm={() => {
+          if (advisoryToDelete) {
+            deleteAdvisory(advisoryToDelete.uuid);
+          }
+        }}
+      />
     </>
   );
 };
