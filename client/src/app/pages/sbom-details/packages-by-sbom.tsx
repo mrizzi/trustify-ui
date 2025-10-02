@@ -2,7 +2,6 @@ import type React from "react";
 import { generatePath, Link } from "react-router-dom";
 
 import {
-  Label,
   List,
   ListItem,
   Toolbar,
@@ -39,6 +38,7 @@ import { useFetchSbomsLicenseIds } from "@app/queries/sboms";
 import { Paths } from "@app/Routes";
 
 import { PackageVulnerabilities } from "../package-list/components/PackageVulnerabilities";
+import { WithPackage } from "@app/components/WithPackage";
 
 const renderLicenseWithMappings = (
   license: string,
@@ -186,15 +186,21 @@ export const PackagesBySbom: React.FC<PackagesProps> = ({ sbomId }) => {
                     >
                       {item?.version}
                     </Td>
-                    <Td
-                      width={10}
-                      modifier="breakWord"
-                      {...getTdProps({ columnKey: "vulnerabilities" })}
-                    >
-                      {item.purl[0] && (
-                        <PackageVulnerabilities packageId={item.purl[0].uuid} />
+                    <WithPackage packageId={item.purl[0].uuid}>
+                      {(pkg, isFetching, fetchError) => (
+                        <Td
+                          width={10}
+                          modifier="breakWord"
+                          {...getTdProps({ columnKey: "vulnerabilities" })}
+                        >
+                          <PackageVulnerabilities
+                            pkg={pkg}
+                            isFetching={isFetching}
+                            fetchError={fetchError}
+                          />
+                        </Td>
                       )}
-                    </Td>
+                    </WithPackage>
                     <Td
                       width={20}
                       modifier="breakWord"
@@ -267,8 +273,7 @@ export const PackagesBySbom: React.FC<PackagesProps> = ({ sbomId }) => {
                                   {renderLicenseWithMappings(
                                     e.license_name,
                                     item.licenses_ref_mapping,
-                                  )}{" "}
-                                  <Label isCompact>{e.license_type}</Label>
+                                  )}
                                 </ListItem>
                               ))}
                             </List>

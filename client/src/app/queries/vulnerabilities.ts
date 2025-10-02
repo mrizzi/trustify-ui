@@ -1,11 +1,11 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 
 import type { HubRequestParams } from "@app/api/models";
 import { client } from "@app/axios-config/apiInit";
 import {
-  type VulnerabilityDetails,
-  deleteVulnerability,
+  type AnalysisResponse,
+  analyze,
   getVulnerability,
   listVulnerabilities,
 } from "@app/client";
@@ -34,8 +34,57 @@ export const useFetchVulnerabilities = (
       params: params,
     },
     isFetching: isLoading,
-    fetchError: error as AxiosError,
+    fetchError: error as AxiosError | null,
     refetch,
+  };
+};
+
+export const useFetchVulnerabilitiesByPackageIds = (ids: string[]) => {
+  const chunks = {
+    ids: ids.reduce<string[][]>((chunks, item, index) => {
+      if (index % 100 === 0) {
+        chunks.push([item]);
+      } else {
+        chunks[chunks.length - 1].push(item);
+      }
+      return chunks;
+    }, []),
+    dataResolver: async (ids: string[]) => {
+      const response = await analyze({
+        client,
+        body: { purls: ids },
+      });
+      return response.data;
+    },
+  };
+
+  const userQueries = useQueries({
+    queries: chunks.ids.map((ids) => {
+      return {
+        queryKey: [VulnerabilitiesQueryKey, ids],
+        queryFn: () => chunks.dataResolver(ids),
+        retry: false,
+      };
+    }),
+  });
+
+  const isFetching = userQueries.some(({ isLoading }) => isLoading);
+  const fetchError = userQueries.find(({ error }) => !!error);
+
+  const analysisResponse: AnalysisResponse = {};
+
+  if (!isFetching) {
+    for (const data of userQueries.map((item) => item?.data ?? {})) {
+      for (const [id, analysisDetails] of Object.entries(data)) {
+        analysisResponse[id] = analysisDetails;
+      }
+    }
+  }
+
+  return {
+    analysisResponse,
+    isFetching,
+    fetchError: (fetchError?.error ?? undefined) as AxiosError | undefined,
   };
 };
 
@@ -47,21 +96,6 @@ export const useFetchVulnerabilityById = (id: string) => {
   return {
     vulnerability: data?.data,
     isFetching: isLoading,
-    fetchError: error as AxiosError,
+    fetchError: error as AxiosError | null,
   };
-};
-
-export const useDeleteVulnerabilityMutation = (
-  onSuccess?: (payload: VulnerabilityDetails, id: string) => void,
-  onError?: (err: AxiosError, id: string) => void,
-) => {
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const response = deleteVulnerability({ client, path: { id } });
-      return (await response).data as VulnerabilityDetails;
-    },
-    mutationKey: [VulnerabilitiesQueryKey],
-    onSuccess,
-    onError,
-  });
 };
