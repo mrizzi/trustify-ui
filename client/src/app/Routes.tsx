@@ -1,9 +1,16 @@
 import { lazy } from "react";
-import { createBrowserRouter, useParams } from "react-router-dom";
+import { createBrowserRouter, useParams, type Params } from "react-router-dom";
+
+import { queryClient } from "./queries/config";
+import { sbomByIdQueryOptions } from "./queries/sboms";
+import { packageByIdQueryOptions } from "./queries/packages";
+import { advisoryByIdQueryOptions } from "./queries/advisories";
+import { SBOMGroupByIdQueryOptions } from "./queries/sbom-groups";
+import { vulnerabilityByIdQueryOptions } from "./queries/vulnerabilities";
 
 import { LazyRouteElement } from "@app/components/LazyRouteElement";
-
 import App from "./App";
+import { RouteErrorBoundary } from "./components/RouteErrorBoundary";
 
 const Home = lazy(() => import("./pages/home"));
 
@@ -28,10 +35,15 @@ const SBOMUpload = lazy(() => import("./pages/sbom-upload"));
 const SBOMScan = lazy(() => import("./pages/sbom-scan"));
 const SBOMDetails = lazy(() => import("./pages/sbom-details"));
 
+// SBOM Groups
+const SbomGroupList = lazy(() => import("./pages/sbom-groups"));
+const SBOMGroupDetails = lazy(() => import("./pages/sbom-group-details"));
+
 // Others
 const Search = lazy(() => import("./pages/search"));
 const ImporterList = lazy(() => import("./pages/importer-list"));
 const LicenseList = lazy(() => import("./pages/license-list"));
+const NotFound = lazy(() => import("./pages/not-found"));
 
 export enum PathParam {
   ADVISORY_ID = "advisoryId",
@@ -39,6 +51,7 @@ export enum PathParam {
   SBOM_ID = "sbomId",
   PACKAGE_ID = "packageId",
   LICENSE_NAME = "licenseName",
+  SBOM_GROUP_ID = "sbomGroupId",
 }
 
 export const Paths = {
@@ -56,7 +69,22 @@ export const Paths = {
   search: "/search",
   importers: "/importers",
   licenses: "/licenses",
+  sbomGroups: "/sbom-groups",
+  sbomGroupDetails: `/sbom-groups/:${PathParam.SBOM_GROUP_ID}`,
 } as const;
+
+export const usePathFromParams = (
+  params: Params<string>,
+  pathParam: PathParam,
+) => {
+  const value = params[pathParam];
+  if (value === undefined) {
+    throw new Error(
+      `ASSERTION FAILURE: required path parameter not set: ${pathParam}`,
+    );
+  }
+  return value;
+};
 
 export const AppRoutes = createBrowserRouter([
   {
@@ -84,6 +112,16 @@ export const AppRoutes = createBrowserRouter([
             component={<AdvisoryDetails />}
           />
         ),
+        errorElement: <RouteErrorBoundary />,
+        loader: async ({ params }) => {
+          const advisoryId = usePathFromParams(params, PathParam.ADVISORY_ID);
+          const response = await queryClient.ensureQueryData(
+            advisoryByIdQueryOptions(advisoryId),
+          );
+          return {
+            advisory: response.data,
+          };
+        },
       },
       {
         path: Paths.advisoryUpload,
@@ -129,6 +167,16 @@ export const AppRoutes = createBrowserRouter([
             component={<PackageDetails />}
           />
         ),
+        errorElement: <RouteErrorBoundary />,
+        loader: async ({ params }) => {
+          const packageId = usePathFromParams(params, PathParam.PACKAGE_ID);
+          const response = await queryClient.ensureQueryData(
+            packageByIdQueryOptions(packageId),
+          );
+          return {
+            package: response.data,
+          };
+        },
       },
       {
         path: Paths.sboms,
@@ -144,6 +192,16 @@ export const AppRoutes = createBrowserRouter([
             component={<SBOMDetails />}
           />
         ),
+        errorElement: <RouteErrorBoundary />,
+        loader: async ({ params }) => {
+          const sbomId = usePathFromParams(params, PathParam.SBOM_ID);
+          const response = await queryClient.ensureQueryData(
+            sbomByIdQueryOptions(sbomId),
+          );
+          return {
+            sbom: response?.data,
+          };
+        },
       },
       {
         path: Paths.sbomScan,
@@ -182,6 +240,56 @@ export const AppRoutes = createBrowserRouter([
             identifier="vulnerability-details"
             component={<VulnerabilityDetails />}
           />
+        ),
+        errorElement: <RouteErrorBoundary />,
+        loader: async ({ params }) => {
+          const vulnerabilityId = usePathFromParams(
+            params,
+            PathParam.VULNERABILITY_ID,
+          );
+          const response = await queryClient.ensureQueryData(
+            vulnerabilityByIdQueryOptions(vulnerabilityId),
+          );
+          return {
+            vulnerability: response.data,
+          };
+        },
+      },
+      {
+        path: Paths.sbomGroups,
+        element: (
+          <LazyRouteElement
+            identifier="sbom-group-list"
+            component={<SbomGroupList />}
+          />
+        ),
+      },
+      {
+        path: Paths.sbomGroupDetails,
+        element: (
+          <LazyRouteElement
+            identifier="sbom-group-details"
+            component={<SBOMGroupDetails />}
+          />
+        ),
+        errorElement: <RouteErrorBoundary />,
+        loader: async ({ params }) => {
+          const sbomGroupId = usePathFromParams(
+            params,
+            PathParam.SBOM_GROUP_ID,
+          );
+          const response = await queryClient.ensureQueryData(
+            SBOMGroupByIdQueryOptions(sbomGroupId),
+          );
+          return {
+            sbomGroup: response?.data,
+          };
+        },
+      },
+      {
+        path: "*",
+        element: (
+          <LazyRouteElement identifier="not-found" component={<NotFound />} />
         ),
       },
     ],

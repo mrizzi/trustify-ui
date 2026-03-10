@@ -11,8 +11,17 @@ import {
   joinKeyValueAsString,
   splitStringAsKeyValue,
 } from "@app/api/model-utils";
-import type { SbomSummary } from "@app/client";
+import type {
+  SbomHead,
+  SbomPackage,
+  SbomSummary,
+  SourceDocument,
+} from "@app/client";
 import { FilterType } from "@app/components/FilterToolbar";
+import {
+  type BulkSelectionValues,
+  useBulkSelection,
+} from "@app/hooks/selection";
 import {
   type ITableControls,
   getHubRequestParams,
@@ -37,6 +46,16 @@ interface ISbomSearchContext {
     string
   >;
 
+  bulkSelection: {
+    isEnabled: boolean;
+    controls: BulkSelectionValues<
+      SbomHead &
+        SourceDocument & {
+          described_by: Array<SbomPackage>;
+        }
+    >;
+  };
+
   totalItemCount: number;
   isFetching: boolean;
   fetchError: AxiosError | null;
@@ -48,10 +67,14 @@ export const SbomSearchContext =
   React.createContext<ISbomSearchContext>(contextDefaultValue);
 
 interface ISbomProvider {
+  sbomGroupId?: string;
+  isBulkSelectionEnabled?: boolean;
   children: React.ReactNode;
 }
 
 export const SbomSearchProvider: React.FunctionComponent<ISbomProvider> = ({
+  sbomGroupId,
+  isBulkSelectionEnabled,
   children,
 }) => {
   const [inputValueLabel, setInputValueLabel] = React.useState("");
@@ -132,6 +155,7 @@ export const SbomSearchProvider: React.FunctionComponent<ISbomProvider> = ({
       },
     ],
     isExpansionEnabled: false,
+    isSelectionEnabled: isBulkSelectionEnabled,
   });
 
   const {
@@ -139,6 +163,7 @@ export const SbomSearchProvider: React.FunctionComponent<ISbomProvider> = ({
     isFetching,
     fetchError,
   } = useFetchSBOMs(
+    sbomGroupId ?? null,
     getHubRequestParams({
       ...tableControlState,
       hubSortFieldKeys: {
@@ -159,9 +184,24 @@ export const SbomSearchProvider: React.FunctionComponent<ISbomProvider> = ({
     isLoading: isFetching,
   });
 
+  const bulkSelectionControls = useBulkSelection({
+    isEqual: (a, b) => a.id === b.id,
+    filteredItems: tableControls.filteredItems,
+    currentPageItems: tableControls.currentPageItems,
+  });
+
   return (
     <SbomSearchContext.Provider
-      value={{ totalItemCount, isFetching, fetchError, tableControls }}
+      value={{
+        totalItemCount,
+        isFetching,
+        fetchError,
+        tableControls,
+        bulkSelection: {
+          isEnabled: !!isBulkSelectionEnabled,
+          controls: bulkSelectionControls,
+        },
+      }}
     >
       {children}
     </SbomSearchContext.Provider>

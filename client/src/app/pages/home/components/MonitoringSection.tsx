@@ -61,7 +61,7 @@ export const MonitoringSection: React.FC = () => {
     result: { data: barchartSboms, total: totalSboms },
     isFetching: isFetchingBarchartSboms,
     fetchError: fetchErrorBarchartSboms,
-  } = useFetchSBOMs({
+  } = useFetchSBOMs(null, {
     page: { pageNumber: 1, itemsPerPage: 10 },
     sort: { field: "ingested", direction: "desc" },
   });
@@ -142,7 +142,7 @@ export const MonitoringSection: React.FC = () => {
                             x={200}
                             colorScale={LEGENDS.map((legend) => {
                               const severity = severityList[legend.severity];
-                              return severity.color.value;
+                              return severity.color.var;
                             })}
                           />
                         }
@@ -196,7 +196,7 @@ export const MonitoringSection: React.FC = () => {
                           horizontal
                           colorScale={LEGENDS.map((legend) => {
                             const severity = severityList[legend.severity];
-                            return severity.color.value;
+                            return severity.color.var;
                           })}
                         >
                           {LEGENDS.map((legend) => {

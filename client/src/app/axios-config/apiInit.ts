@@ -1,9 +1,15 @@
 import axios from "axios";
 import { User, UserManager } from "oidc-client-ts";
 
-import { OIDC_CLIENT_ID, OIDC_SERVER_URL, oidcClientSettings } from "@app/oidc";
+import {
+  OIDC_CLIENT_ID,
+  OIDC_SERVER_URL,
+  oidcClientSettings,
+  oidcSignoutArgs,
+} from "@app/oidc";
 
 import { createClient } from "@app/client/client";
+import { isAuthRequired } from "@app/Constants";
 
 export const client = createClient({
   // set default base url for requests
@@ -23,6 +29,10 @@ function getUser() {
 }
 
 export const initInterceptors = () => {
+  if (!isAuthRequired) {
+    return;
+  }
+
   axios.interceptors.request.use(
     (config) => {
       const user = getUser();
@@ -66,7 +76,7 @@ export const initInterceptors = () => {
             });
           }
         } catch (_refreshError) {
-          await userManager.signoutRedirect();
+          await userManager.signoutRedirect(oidcSignoutArgs);
         }
       }
 
