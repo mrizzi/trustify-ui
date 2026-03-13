@@ -15,10 +15,12 @@ import {
   type SbomSummary,
   deleteSbom,
   downloadSbom,
+  getAiModel,
   getSbom,
   getSbomAdvisories,
   listAllLicenseIds,
   listRelatedSboms,
+  listSbomAiModels,
   listSbomLabels,
   listSboms,
   updateSbomLabels,
@@ -104,6 +106,49 @@ export const useFetchSBOMById = (
 
   return {
     sbom: data?.data,
+    isFetching: isLoading,
+    fetchError: error as AxiosError | null,
+  };
+};
+
+export const useFetchSbomAiModels = (
+  sbomId: string,
+  params: HubRequestParams = {},
+) => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: [SBOMsQueryKey, "ai-models", sbomId, params],
+    queryFn: () =>
+      listSbomAiModels({
+        client,
+        path: { id: sbomId },
+        query: { ...requestParamsQuery(params) },
+      }),
+  });
+
+  return {
+    result: {
+      data: data?.data?.items || [],
+      total: data?.data?.total ?? 0,
+      params,
+    },
+    isFetching: isLoading,
+    fetchError: error as AxiosError | null,
+  };
+};
+
+export const useFetchAiModelDetails = (sbomId: string, nodeId: string) => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: [SBOMsQueryKey, "ai-model-details", sbomId, nodeId],
+    queryFn: () =>
+      getAiModel({
+        client,
+        path: { sbom_id: sbomId, node_id: nodeId },
+      }),
+    enabled: !!sbomId && !!nodeId,
+  });
+
+  return {
+    aiModel: data?.data,
     isFetching: isLoading,
     fetchError: error as AxiosError | null,
   };

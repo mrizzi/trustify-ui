@@ -43,6 +43,7 @@ import { useDownload } from "@app/hooks/domain-controls/useDownload";
 import { useDeleteSbomMutation, useFetchSBOMById } from "@app/queries/sboms";
 
 import { useNavigate } from "react-router-dom";
+import { AiModelsBySbom } from "./ai-models-by-sbom";
 import { Overview } from "./overview";
 import { PackagesBySbom } from "./packages-by-sbom";
 import { VulnerabilitiesBySbom } from "./vulnerabilities-by-sbom";
@@ -95,9 +96,12 @@ export const SbomDetails: React.FC = () => {
   const infoTabRef = React.createRef<HTMLElement>();
   const packagesTabRef = React.createRef<HTMLElement>();
   const vulnerabilitiesTabRef = React.createRef<HTMLElement>();
+  const aiAssetsTabRef = React.createRef<HTMLElement>();
 
   // Tabs popover refs
   const vulnerabilitiesTabPopoverRef = React.createRef<HTMLElement>();
+
+  const isAibom = sbom?.labels?.kind === "aibom";
 
   const handleTabClick = (
     _event: React.MouseEvent | React.KeyboardEvent | MouseEvent,
@@ -230,6 +234,14 @@ export const SbomDetails: React.FC = () => {
               </>
             }
           />
+          {isAibom && (
+            <Tab
+              eventKey={3}
+              title={<TabTitleText>AI assets</TabTitleText>}
+              tabContentId="refAiAssetsSection"
+              tabContentRef={aiAssetsTabRef}
+            />
+          )}
         </Tabs>
       </PageSection>
       <PageSection>
@@ -264,6 +276,20 @@ export const SbomDetails: React.FC = () => {
         >
           {sbomId && <VulnerabilitiesBySbom sbomId={sbomId} />}
         </TabContent>
+        {isAibom && (
+          <>
+            {/** biome-ignore lint/correctness/useUniqueElementIds: allowed as Patternfly requires id*/}
+            <TabContent
+              eventKey={3}
+              id="refAiAssetsSection"
+              ref={aiAssetsTabRef}
+              aria-label="AI model assets within the SBOM"
+              hidden
+            >
+              {sbomId && <AiModelsBySbom sbomId={sbomId} />}
+            </TabContent>
+          </>
+        )}
       </PageSection>
 
       <ConfirmDialog
