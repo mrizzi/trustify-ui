@@ -22,6 +22,9 @@ const VulnerabilityDetails = lazy(
 const PackageList = lazy(() => import("./pages/package-list"));
 const PackageDetails = lazy(() => import("./pages/package-details"));
 
+// Model
+const ModelList = lazy(() => import("./pages/model-list"));
+
 // SBOM
 const SBOMList = lazy(() => import("./pages/sbom-list"));
 const SBOMUpload = lazy(() => import("./pages/sbom-upload"));
@@ -39,6 +42,7 @@ export enum PathParam {
   SBOM_ID = "sbomId",
   PACKAGE_ID = "packageId",
   LICENSE_NAME = "licenseName",
+  MODEL_ID = "modelId",
 }
 
 export const Paths = {
@@ -47,6 +51,8 @@ export const Paths = {
   advisoryDetails: `/advisories/:${PathParam.ADVISORY_ID}`,
   vulnerabilities: "/vulnerabilities",
   vulnerabilityDetails: `/vulnerabilities/:${PathParam.VULNERABILITY_ID}`,
+  models: "/models",
+  modelDetails: `/models/:${PathParam.SBOM_ID}/:${PathParam.MODEL_ID}`,
   sboms: "/sboms",
   sbomUpload: "/sboms/upload",
   sbomScan: "/sboms/scan",
@@ -128,6 +134,12 @@ export const AppRoutes = createBrowserRouter([
             identifier="package-details"
             component={<PackageDetails />}
           />
+        ),
+      },
+      {
+        path: Paths.models,
+        element: (
+          <LazyRouteElement identifier="model-list" component={<ModelList />} />
         ),
       },
       {
