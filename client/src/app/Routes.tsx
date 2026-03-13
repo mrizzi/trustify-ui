@@ -24,6 +24,7 @@ const PackageDetails = lazy(() => import("./pages/package-details"));
 
 // Model
 const ModelList = lazy(() => import("./pages/model-list"));
+const ModelDetails = lazy(() => import("./pages/model-details"));
 
 // SBOM
 const SBOMList = lazy(() => import("./pages/sbom-list"));
@@ -140,6 +141,15 @@ export const AppRoutes = createBrowserRouter([
         path: Paths.models,
         element: (
           <LazyRouteElement identifier="model-list" component={<ModelList />} />
+        ),
+      },
+      {
+        path: Paths.modelDetails,
+        element: (
+          <LazyRouteElement
+            identifier="model-details"
+            component={<ModelDetails />}
+          />
         ),
       },
       {
