@@ -42,7 +42,9 @@ export const SbomGroupSelect: React.FC<ISbomGroupSelectProps> = ({
           ],
           page: { pageNumber: 1, itemsPerPage: 10 },
         }
-      : {};
+      : {
+          page: { pageNumber: 1, itemsPerPage: 0 },
+        };
 
   const extraParamsQuery: { parents?: "resolve"; totals?: boolean } =
     effectiveQuery.type === "filterText"
@@ -93,7 +95,7 @@ export const SbomGroupSelect: React.FC<ISbomGroupSelectProps> = ({
       isLoading={isFetching}
       fetchError={fetchError ?? undefined}
       value={value ? groupToOption(value) : undefined}
-      onChange={(option) => onChange(option?.value)}
+      onChange={(option) => onChange(option?.value ?? null)}
       searchQuery={searchQuery}
       onSearchQueryChange={setSearchQuery}
       placeholder={"Select parent group"}
