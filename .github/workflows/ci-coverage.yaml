@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - "main"
+      - "NIST"
   workflow_call:
   merge_group:
 
