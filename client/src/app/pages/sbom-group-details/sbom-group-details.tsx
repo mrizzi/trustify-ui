@@ -113,7 +113,7 @@ export const SBOMGroupDetails: React.FC = () => {
               ref={riskAssessmentTabRef}
               aria-label="Product Risk Assessment"
             >
-              <ProductRiskAssessment />
+              <ProductRiskAssessment riskAssessmentId={sbomGroupId} />
             </TabContent>
           </PageSection>
         </>
