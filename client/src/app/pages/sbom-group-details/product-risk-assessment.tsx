@@ -22,9 +22,7 @@ export const ProductRiskAssessment: React.FC<ProductRiskAssessmentProps> = ({
     useFetchRiskAssessment(riskAssessmentId);
 
   const createMutation = useCreateRiskAssessmentMutation(
-    () => {
-      window.location.reload();
-    },
+    () => {},
     () => {},
   );
 
