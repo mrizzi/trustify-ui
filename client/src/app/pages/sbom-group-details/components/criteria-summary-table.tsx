@@ -1,6 +1,9 @@
 import type React from "react";
 
-import { Label } from "@patternfly/react-core";
+import { Flex, FlexItem, Label } from "@patternfly/react-core";
+import CheckCircleIcon from "@patternfly/react-icons/dist/esm/icons/check-circle-icon";
+import ExclamationCircleIcon from "@patternfly/react-icons/dist/esm/icons/exclamation-circle-icon";
+import ExclamationTriangleIcon from "@patternfly/react-icons/dist/esm/icons/exclamation-triangle-icon";
 import { Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 
 import type { CriterionResult } from "@app/queries/risk-assessments";
@@ -12,30 +15,46 @@ interface CriteriaSummaryTableProps {
 /** Map a completeness string to a PatternFly Label color. */
 const completenessColor = (value: string) => {
   switch (value) {
-    case "Complete":
+    case "complete":
       return "green";
-    case "Partial":
+    case "partial":
       return "blue";
-    case "Missing":
+    case "missing":
       return "yellow";
     default:
       return "grey";
   }
 };
 
-/** Map a risk level string to a PatternFly Label color. */
-const riskLevelColor = (value: string) => {
-  switch (value) {
-    case "Very high":
-    case "High":
-      return "red";
-    case "Moderate":
-      return "orange";
-    case "Low":
-      return "grey";
-    default:
-      return "grey";
+/** Render a risk level with an appropriate status icon. */
+const RiskLevelDisplay: React.FC<{ value: string }> = ({ value }) => {
+  const lower = value.toLowerCase();
+
+  let icon: React.ReactNode;
+  if (lower === "very high" || lower === "high") {
+    icon = (
+      <ExclamationCircleIcon color="var(--pf-t--global--color--status--danger--default)" />
+    );
+  } else if (lower === "moderate") {
+    icon = (
+      <ExclamationTriangleIcon color="var(--pf-t--global--color--status--warning--default)" />
+    );
+  } else {
+    icon = (
+      <CheckCircleIcon color="var(--pf-t--global--color--status--success--default)" />
+    );
   }
+
+  return (
+    <Flex
+      gap={{ default: "gapSm" }}
+      alignItems={{ default: "alignItemsCenter" }}
+      flexWrap={{ default: "nowrap" }}
+    >
+      <FlexItem>{icon}</FlexItem>
+      <FlexItem>{value}</FlexItem>
+    </Flex>
+  );
 };
 
 export const CriteriaSummaryTable: React.FC<CriteriaSummaryTableProps> = ({
@@ -61,9 +80,7 @@ export const CriteriaSummaryTable: React.FC<CriteriaSummaryTableProps> = ({
               </Label>
             </Td>
             <Td dataLabel="Risk Level">
-              <Label color={riskLevelColor(item.riskLevel)}>
-                {item.riskLevel}
-              </Label>
+              <RiskLevelDisplay value={item.riskLevel} />
             </Td>
             <Td dataLabel="Score">{item.score}</Td>
           </Tr>

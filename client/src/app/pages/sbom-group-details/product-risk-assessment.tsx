@@ -79,14 +79,17 @@ export const ProductRiskAssessment: React.FC<ProductRiskAssessmentProps> = ({
         </Content>
       </StackItem>
       <StackItem isFilled>
-        {isCompleted ? (
-          <AssessmentResults
-            assessment={latestAssessment}
-            onStartNewAssessment={handleStartNewAssessment}
-          />
-        ) : (
-          <AssessmentWizard riskAssessmentId={latestAssessment.id} />
-        )}
+        <AssessmentWizard
+          riskAssessmentId={latestAssessment.id}
+          resultsContent={
+            isCompleted ? (
+              <AssessmentResults
+                assessment={latestAssessment}
+                onStartNewAssessment={handleStartNewAssessment}
+              />
+            ) : undefined
+          }
+        />
       </StackItem>
     </Stack>
   );

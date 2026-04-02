@@ -15,7 +15,10 @@ import {
 
 import { StateError } from "@app/components/StateError";
 import type { RiskAssessment } from "@app/queries/risk-assessments";
-import { useFetchRiskAssessmentResults } from "@app/queries/risk-assessments";
+import {
+  useDownloadAssessmentDocument,
+  useFetchRiskAssessmentResults,
+} from "@app/queries/risk-assessments";
 
 import { CriteriaSummaryTable } from "./criteria-summary-table";
 
@@ -24,6 +27,7 @@ interface AssessmentResultsProps {
   onStartNewAssessment: () => void;
 }
 
+/** Displays overall score card and criteria summary for a completed assessment. */
 export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
   assessment,
   onStartNewAssessment,
@@ -31,6 +35,7 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
   const { results, isFetching, fetchError } = useFetchRiskAssessmentResults(
     assessment.id,
   );
+  const { download } = useDownloadAssessmentDocument(assessment.id, "sar");
 
   if (isFetching) {
     return <Spinner aria-label="Loading assessment results" />;
@@ -47,7 +52,6 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
   const scorePercent = results.scoring?.overall.score ?? results.overallScore;
   const riskLevel = results.scoring?.overall.riskLevel;
   const updatedDate = new Date(assessment.updatedAt).toLocaleDateString();
-
   const allCriteria = results.categories.flatMap((cat) => cat.criteria);
 
   return (
@@ -56,13 +60,8 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
         <Card>
           <CardTitle>Overall Score</CardTitle>
           <CardBody>
-            <Flex
-              alignItems={{ default: "alignItemsCenter" }}
-              justifyContent={{
-                default: "justifyContentSpaceBetween",
-              }}
-            >
-              <FlexItem>
+            <Stack hasGutter>
+              <StackItem>
                 <Content component="p">
                   <span
                     style={{
@@ -72,38 +71,46 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
                   >
                     {scorePercent != null
                       ? `${Math.round(scorePercent)}%`
-                      : "—"}
+                      : "\u2014"}
                   </span>
                   {riskLevel && (
                     <span
-                      style={{ marginLeft: "var(--pf-t--global--spacer--sm)" }}
+                      style={{
+                        marginLeft: "var(--pf-t--global--spacer--sm)",
+                      }}
                     >
                       ({riskLevel})
                     </span>
                   )}
                 </Content>
                 <Content component="small">Completed on {updatedDate}</Content>
-              </FlexItem>
-              <FlexItem>
+              </StackItem>
+              <StackItem>
                 <Flex gap={{ default: "gapSm" }}>
                   <FlexItem>
-                    <Button
-                      variant="primary"
-                      isInline
-                      onClick={onStartNewAssessment}
-                    >
+                    <Button variant="secondary" onClick={onStartNewAssessment}>
                       Start New Assessment
                     </Button>
                   </FlexItem>
+                  <FlexItem>
+                    <Button variant="primary" onClick={download}>
+                      Download Assessment
+                    </Button>
+                  </FlexItem>
                 </Flex>
-              </FlexItem>
-            </Flex>
+              </StackItem>
+            </Stack>
           </CardBody>
         </Card>
       </StackItem>
       {allCriteria.length > 0 && (
         <StackItem>
-          <CriteriaSummaryTable criteria={allCriteria} />
+          <Card>
+            <CardTitle>Criteria Summary</CardTitle>
+            <CardBody>
+              <CriteriaSummaryTable criteria={allCriteria} />
+            </CardBody>
+          </Card>
         </StackItem>
       )}
     </Stack>

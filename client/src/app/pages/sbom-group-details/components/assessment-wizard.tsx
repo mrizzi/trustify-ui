@@ -42,10 +42,13 @@ const uploadRiskAssessmentDocument = (
 
 interface AssessmentWizardProps {
   riskAssessmentId: string;
+  /** When provided, renders this content in the right panel instead of the upload step. */
+  resultsContent?: React.ReactNode;
 }
 
 export const AssessmentWizard: React.FC<AssessmentWizardProps> = ({
   riskAssessmentId,
+  resultsContent,
 }) => {
   const [activeStep, setActiveStep] = React.useState(0);
   const [completedSteps, setCompletedSteps] = React.useState<Set<number>>(
@@ -73,8 +76,8 @@ export const AssessmentWizard: React.FC<AssessmentWizardProps> = ({
               <NavItem
                 key={category.key}
                 itemId={index}
-                isActive={activeStep === index}
-                onClick={() => setActiveStep(index)}
+                isActive={!resultsContent && activeStep === index}
+                onClick={() => !resultsContent && setActiveStep(index)}
                 icon={
                   completedSteps.has(index) ? (
                     <CheckCircleIcon color="var(--pf-t--global--color--status--success--default)" />
@@ -90,21 +93,23 @@ export const AssessmentWizard: React.FC<AssessmentWizardProps> = ({
       <FlexItem flex={{ default: "flex_1" }}>
         <Stack hasGutter>
           <StackItem isFilled>
-            <AssessmentCategoryStep
-              key={currentCategory.key}
-              category={currentCategory}
-              uploadFn={(formData, config) =>
-                uploadRiskAssessmentDocument(
-                  riskAssessmentId,
-                  currentCategory.key,
-                  formData,
-                  config,
-                )
-              }
-              onUploadSuccess={() => {
-                setCompletedSteps((prev) => new Set(prev).add(activeStep));
-              }}
-            />
+            {resultsContent ?? (
+              <AssessmentCategoryStep
+                key={currentCategory.key}
+                category={currentCategory}
+                uploadFn={(formData, config) =>
+                  uploadRiskAssessmentDocument(
+                    riskAssessmentId,
+                    currentCategory.key,
+                    formData,
+                    config,
+                  )
+                }
+                onUploadSuccess={() => {
+                  setCompletedSteps((prev) => new Set(prev).add(activeStep));
+                }}
+              />
+            )}
           </StackItem>
           <StackItem>
             <Flex justifyContent={{ default: "justifyContentFlexEnd" }}>
@@ -112,7 +117,7 @@ export const AssessmentWizard: React.FC<AssessmentWizardProps> = ({
                 <Button
                   variant="secondary"
                   onClick={handleBack}
-                  isDisabled={activeStep === 0}
+                  isDisabled={!!resultsContent || activeStep === 0}
                 >
                   Back
                 </Button>
@@ -121,7 +126,10 @@ export const AssessmentWizard: React.FC<AssessmentWizardProps> = ({
                 <Button
                   variant="primary"
                   onClick={handleNext}
-                  isDisabled={activeStep === ASSESSMENT_CATEGORIES.length - 1}
+                  isDisabled={
+                    !!resultsContent ||
+                    activeStep === ASSESSMENT_CATEGORIES.length - 1
+                  }
                 >
                   Next
                 </Button>
