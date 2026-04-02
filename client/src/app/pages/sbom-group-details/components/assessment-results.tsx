@@ -14,25 +14,23 @@ import {
 } from "@patternfly/react-core";
 
 import { StateError } from "@app/components/StateError";
-import {
-  useDownloadAssessment,
-  useFetchRiskAssessmentResults,
-} from "@app/queries/risk-assessments";
+import type { RiskAssessment } from "@app/queries/risk-assessments";
+import { useFetchRiskAssessmentResults } from "@app/queries/risk-assessments";
 
 import { CriteriaSummaryTable } from "./criteria-summary-table";
 
 interface AssessmentResultsProps {
-  riskAssessmentId: string;
+  assessment: RiskAssessment;
   onStartNewAssessment: () => void;
 }
 
 export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
-  riskAssessmentId,
+  assessment,
   onStartNewAssessment,
 }) => {
-  const { results, isFetching, fetchError } =
-    useFetchRiskAssessmentResults(riskAssessmentId);
-  const { download } = useDownloadAssessment(riskAssessmentId);
+  const { results, isFetching, fetchError } = useFetchRiskAssessmentResults(
+    assessment.id,
+  );
 
   if (isFetching) {
     return <Spinner aria-label="Loading assessment results" />;
@@ -46,7 +44,11 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
     return null;
   }
 
-  const submittedDate = new Date(results.submittedAt).toLocaleDateString();
+  const scorePercent = results.scoring?.overall.score ?? results.overallScore;
+  const riskLevel = results.scoring?.overall.riskLevel;
+  const updatedDate = new Date(assessment.updatedAt).toLocaleDateString();
+
+  const allCriteria = results.categories.flatMap((cat) => cat.criteria);
 
   return (
     <Stack hasGutter>
@@ -68,12 +70,19 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
                       fontWeight: "var(--pf-t--global--font--weight--bold)",
                     }}
                   >
-                    {results.overallScore}%
+                    {scorePercent != null
+                      ? `${Math.round(scorePercent)}%`
+                      : "—"}
                   </span>
+                  {riskLevel && (
+                    <span
+                      style={{ marginLeft: "var(--pf-t--global--spacer--sm)" }}
+                    >
+                      ({riskLevel})
+                    </span>
+                  )}
                 </Content>
-                <Content component="small">
-                  Submitted on {submittedDate}
-                </Content>
+                <Content component="small">Completed on {updatedDate}</Content>
               </FlexItem>
               <FlexItem>
                 <Flex gap={{ default: "gapSm" }}>
@@ -86,20 +95,17 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
                       Start New Assessment
                     </Button>
                   </FlexItem>
-                  <FlexItem>
-                    <Button variant="primary" onClick={download}>
-                      Download Assessment
-                    </Button>
-                  </FlexItem>
                 </Flex>
               </FlexItem>
             </Flex>
           </CardBody>
         </Card>
       </StackItem>
-      <StackItem>
-        <CriteriaSummaryTable criteria={results.criteria} />
-      </StackItem>
+      {allCriteria.length > 0 && (
+        <StackItem>
+          <CriteriaSummaryTable criteria={allCriteria} />
+        </StackItem>
+      )}
     </Stack>
   );
 };

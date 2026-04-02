@@ -5,40 +5,82 @@ const RISK_ASSESSMENTS = "/api/v2/risk-assessment";
 
 export const RiskAssessmentsQueryKey = "risk-assessments";
 
+/** A risk assessment associated with a group. */
 export interface RiskAssessment {
   id: string;
-  status: "in_progress" | "completed";
-  submittedAt?: string;
+  groupId: string;
+  status: string;
   overallScore?: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
+/** Per-criterion evaluation within a category. */
 export interface CriterionResult {
+  id: string;
   criterion: string;
-  completeness: "Complete" | "Partial" | "Missing";
-  riskLevel: "Very high" | "High" | "Moderate" | "Low";
+  completeness: string;
+  riskLevel: string;
   score: number;
+  details?: unknown;
 }
 
-export interface RiskAssessmentResults {
-  overallScore: number;
-  submittedAt: string;
+/** Results for a single assessment category (e.g. a document). */
+export interface CategoryResult {
+  category: string;
+  documentId: string;
+  processed: boolean;
   criteria: CriterionResult[];
 }
 
-export const useFetchRiskAssessment = (id?: string) => {
+/** Aggregated score for a single category. */
+export interface CategoryScore {
+  category: string;
+  score: number;
+  weight: number;
+  weightedScore: number;
+  riskLevel: string;
+  criteriaCount: number;
+}
+
+/** Overall scoring summary across all categories. */
+export interface OverallScore {
+  score: number;
+  riskLevel: string;
+  missingCategories: string[];
+}
+
+/** Aggregated scoring result with overall and per-category breakdowns. */
+export interface ScoringResult {
+  overall: OverallScore;
+  categories: CategoryScore[];
+}
+
+/** Full results for a completed risk assessment. */
+export interface RiskAssessmentResults {
+  assessmentId: string;
+  overallScore?: number;
+  categories: CategoryResult[];
+  scoring?: ScoringResult;
+}
+
+/** Fetch all risk assessments for a given group. */
+export const useFetchRiskAssessmentsByGroup = (groupId?: string) => {
   const { data, isLoading, error } = useQuery({
-    queryKey: [RiskAssessmentsQueryKey, id],
-    queryFn: () => axios.get<RiskAssessment>(`${RISK_ASSESSMENTS}/${id}`),
-    enabled: !!id,
+    queryKey: [RiskAssessmentsQueryKey, "group", groupId],
+    queryFn: () =>
+      axios.get<RiskAssessment[]>(`${RISK_ASSESSMENTS}/group/${groupId}`),
+    enabled: !!groupId,
   });
 
   return {
-    riskAssessment: data?.data,
+    assessments: data?.data ?? [],
     isFetching: isLoading,
     fetchError: error as AxiosError | null,
   };
 };
 
+/** Fetch detailed results for a specific risk assessment. */
 export const useFetchRiskAssessmentResults = (id?: string) => {
   const { data, isLoading, error } = useQuery({
     queryKey: [RiskAssessmentsQueryKey, id, "results"],
@@ -54,14 +96,15 @@ export const useFetchRiskAssessmentResults = (id?: string) => {
   };
 };
 
+/** Create a new risk assessment for a group. */
 export const useCreateRiskAssessmentMutation = (
-  onSuccess: (response: RiskAssessment) => void,
+  onSuccess: (response: { id: string }) => void,
   onError: (err: AxiosError) => void,
 ) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (groupId: string) => {
-      const response = await axios.post<RiskAssessment>(RISK_ASSESSMENTS, {
+      const response = await axios.post<{ id: string }>(RISK_ASSESSMENTS, {
         groupId,
       });
       return response.data;
@@ -76,17 +119,27 @@ export const useCreateRiskAssessmentMutation = (
   });
 };
 
-export const useDownloadAssessment = (id?: string) => {
+/** Download a risk assessment document for a specific category. */
+export const useDownloadAssessmentDocument = (
+  assessmentId?: string,
+  category?: string,
+) => {
   const download = async () => {
-    if (!id) return;
-    const response = await axios.get(`${RISK_ASSESSMENTS}/${id}/report`, {
-      responseType: "blob",
-      headers: { Accept: "application/pdf" },
-    });
+    if (!assessmentId || !category) return;
+    const response = await axios.get(
+      `${RISK_ASSESSMENTS}/${assessmentId}/document/${category}`,
+      {
+        responseType: "blob",
+        headers: { Accept: "application/octet-stream" },
+      },
+    );
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `risk-assessment-${id}.pdf`);
+    link.setAttribute(
+      "download",
+      `risk-assessment-${assessmentId}-${category}`,
+    );
     document.body.appendChild(link);
     link.click();
     link.remove();

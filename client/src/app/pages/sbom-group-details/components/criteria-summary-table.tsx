@@ -9,7 +9,8 @@ interface CriteriaSummaryTableProps {
   criteria: CriterionResult[];
 }
 
-const completenessColor = (value: CriterionResult["completeness"]) => {
+/** Map a completeness string to a PatternFly Label color. */
+const completenessColor = (value: string) => {
   switch (value) {
     case "Complete":
       return "green";
@@ -17,10 +18,13 @@ const completenessColor = (value: CriterionResult["completeness"]) => {
       return "blue";
     case "Missing":
       return "yellow";
+    default:
+      return "grey";
   }
 };
 
-const riskLevelColor = (value: CriterionResult["riskLevel"]) => {
+/** Map a risk level string to a PatternFly Label color. */
+const riskLevelColor = (value: string) => {
   switch (value) {
     case "Very high":
     case "High":
@@ -28,6 +32,8 @@ const riskLevelColor = (value: CriterionResult["riskLevel"]) => {
     case "Moderate":
       return "orange";
     case "Low":
+      return "grey";
+    default:
       return "grey";
   }
 };
@@ -47,7 +53,7 @@ export const CriteriaSummaryTable: React.FC<CriteriaSummaryTableProps> = ({
       </Thead>
       <Tbody>
         {criteria.map((item) => (
-          <Tr key={item.criterion}>
+          <Tr key={item.id}>
             <Td dataLabel="Criterion">{item.criterion}</Td>
             <Td dataLabel="Completeness">
               <Label color={completenessColor(item.completeness)}>
