@@ -76,7 +76,7 @@ export const AssessmentWizard: React.FC<AssessmentWizardProps> = ({
               <NavItem
                 key={category.key}
                 itemId={index}
-                isActive={!resultsContent && activeStep === index}
+                isActive={activeStep === index}
                 onClick={() => !resultsContent && setActiveStep(index)}
                 icon={
                   completedSteps.has(index) ? (
@@ -117,7 +117,7 @@ export const AssessmentWizard: React.FC<AssessmentWizardProps> = ({
                 <Button
                   variant="secondary"
                   onClick={handleBack}
-                  isDisabled={!!resultsContent || activeStep === 0}
+                  isDisabled={activeStep === 0}
                 >
                   Back
                 </Button>
@@ -126,10 +126,7 @@ export const AssessmentWizard: React.FC<AssessmentWizardProps> = ({
                 <Button
                   variant="primary"
                   onClick={handleNext}
-                  isDisabled={
-                    !!resultsContent ||
-                    activeStep === ASSESSMENT_CATEGORIES.length - 1
-                  }
+                  isDisabled={activeStep === ASSESSMENT_CATEGORIES.length - 1}
                 >
                   Next
                 </Button>
