@@ -16,12 +16,14 @@ import {
 import CheckCircleIcon from "@patternfly/react-icons/dist/esm/icons/check-circle-icon";
 
 import { FORM_DATA_FILE_KEY } from "@app/Constants";
+import type { RiskAssessmentResults } from "@app/queries/risk-assessments";
 import { RiskAssessmentsQueryKey } from "@app/queries/risk-assessments";
 
 import {
   ASSESSMENT_CATEGORIES,
   AssessmentCategoryStep,
 } from "./assessment-category-step";
+import { AssessmentCategoryResults } from "./assessment-results";
 
 const RISK_ASSESSMENTS = "/api/v2/risk-assessment";
 
@@ -44,21 +46,30 @@ const uploadRiskAssessmentDocument = (
 
 interface AssessmentWizardProps {
   riskAssessmentId: string;
-  /** When provided, renders this content in the right panel instead of the upload step. */
-  resultsContent?: React.ReactNode;
+  /** Per-category results data from the API. */
+  results?: RiskAssessmentResults;
+  /** Callback to delete the current assessment and create a fresh one. */
+  onStartNewAssessment: () => void;
 }
 
 export const AssessmentWizard: React.FC<AssessmentWizardProps> = ({
   riskAssessmentId,
-  resultsContent,
+  results,
+  onStartNewAssessment,
 }) => {
   const queryClient = useQueryClient();
   const [activeStep, setActiveStep] = React.useState(0);
-  const [completedSteps, setCompletedSteps] = React.useState<Set<number>>(
+  const [uploadedSteps, setUploadedSteps] = React.useState<Set<number>>(
     new Set(),
   );
 
+  const categoryResultMap = new Map(
+    results?.categories.map((cat) => [cat.category, cat]) ?? [],
+  );
+
   const currentCategory = ASSESSMENT_CATEGORIES[activeStep];
+  const currentCategoryResult = categoryResultMap.get(currentCategory.key);
+  const isCategoryProcessed = currentCategoryResult?.processed ?? false;
 
   const handleBack = () => {
     setActiveStep((prev) => Math.max(0, prev - 1));
@@ -77,7 +88,10 @@ export const AssessmentWizard: React.FC<AssessmentWizardProps> = ({
           <NavList>
             {ASSESSMENT_CATEGORIES.map((category, index) => {
               const isActive = activeStep === index;
-              const isCompleted = completedSteps.has(index);
+              const isProcessed =
+                categoryResultMap.get(category.key)?.processed ?? false;
+              const isUploaded = uploadedSteps.has(index);
+              const isCompleted = isProcessed || isUploaded;
 
               const stepIcon = isCompleted ? (
                 <CheckCircleIcon color="var(--pf-t--global--color--status--success--default)" />
@@ -112,7 +126,7 @@ export const AssessmentWizard: React.FC<AssessmentWizardProps> = ({
                   key={category.key}
                   itemId={index}
                   isActive={isActive}
-                  onClick={() => !resultsContent && setActiveStep(index)}
+                  onClick={() => setActiveStep(index)}
                   icon={stepIcon}
                 >
                   {category.name}
@@ -125,7 +139,15 @@ export const AssessmentWizard: React.FC<AssessmentWizardProps> = ({
       <FlexItem flex={{ default: "flex_1" }}>
         <Stack hasGutter>
           <StackItem isFilled>
-            {resultsContent ?? (
+            {isCategoryProcessed && currentCategoryResult ? (
+              <AssessmentCategoryResults
+                assessmentId={riskAssessmentId}
+                category={currentCategory}
+                categoryResult={currentCategoryResult}
+                overallResults={results as RiskAssessmentResults}
+                onStartNewAssessment={onStartNewAssessment}
+              />
+            ) : (
               <AssessmentCategoryStep
                 key={currentCategory.key}
                 category={currentCategory}
@@ -138,7 +160,7 @@ export const AssessmentWizard: React.FC<AssessmentWizardProps> = ({
                   )
                 }
                 onUploadSuccess={async () => {
-                  setCompletedSteps((prev) => new Set(prev).add(activeStep));
+                  setUploadedSteps((prev) => new Set(prev).add(activeStep));
                   await queryClient.invalidateQueries({
                     queryKey: [RiskAssessmentsQueryKey],
                   });

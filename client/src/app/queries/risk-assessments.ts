@@ -119,6 +119,26 @@ export const useCreateRiskAssessmentMutation = (
   });
 };
 
+/** Delete a risk assessment by ID. */
+export const useDeleteRiskAssessmentMutation = (
+  onSuccess: () => void,
+  onError: (err: AxiosError) => void,
+) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await axios.delete(`${RISK_ASSESSMENTS}/${id}`);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: [RiskAssessmentsQueryKey],
+      });
+      onSuccess();
+    },
+    onError: onError,
+  });
+};
+
 /** Download a risk assessment document for a specific category. */
 export const useDownloadAssessmentDocument = (
   assessmentId?: string,

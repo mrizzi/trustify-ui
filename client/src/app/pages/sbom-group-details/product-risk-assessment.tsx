@@ -12,10 +12,11 @@ import { StateError } from "@app/components/StateError";
 import { StateNoData } from "@app/components/StateNoData";
 import {
   useCreateRiskAssessmentMutation,
+  useDeleteRiskAssessmentMutation,
+  useFetchRiskAssessmentResults,
   useFetchRiskAssessmentsByGroup,
 } from "@app/queries/risk-assessments";
 
-import { AssessmentResults } from "./components/assessment-results";
 import { AssessmentWizard } from "./components/assessment-wizard";
 
 interface ProductRiskAssessmentProps {
@@ -28,12 +29,28 @@ export const ProductRiskAssessment: React.FC<ProductRiskAssessmentProps> = ({
   const { assessments, isFetching, fetchError } =
     useFetchRiskAssessmentsByGroup(groupId);
 
+  const latestAssessment =
+    assessments.length > 0 ? assessments[assessments.length - 1] : undefined;
+
+  const { results } = useFetchRiskAssessmentResults(latestAssessment?.id);
+
+  const deleteMutation = useDeleteRiskAssessmentMutation(
+    () => {},
+    () => {},
+  );
   const createMutation = useCreateRiskAssessmentMutation(
     () => {},
     () => {},
   );
 
-  const handleStartNewAssessment = () => {
+  const handleStartNewAssessment = async () => {
+    if (latestAssessment) {
+      await deleteMutation.mutateAsync(latestAssessment.id);
+    }
+    createMutation.mutate(groupId);
+  };
+
+  const handleCreateAssessment = () => {
     createMutation.mutate(groupId);
   };
 
@@ -44,9 +61,6 @@ export const ProductRiskAssessment: React.FC<ProductRiskAssessmentProps> = ({
   if (fetchError) {
     return <StateError />;
   }
-
-  const latestAssessment =
-    assessments.length > 0 ? assessments[assessments.length - 1] : undefined;
 
   if (!latestAssessment) {
     return (
@@ -61,15 +75,13 @@ export const ProductRiskAssessment: React.FC<ProductRiskAssessmentProps> = ({
           <StateNoData />
         </StackItem>
         <StackItem>
-          <Button variant="primary" onClick={handleStartNewAssessment}>
+          <Button variant="primary" onClick={handleCreateAssessment}>
             Start New Assessment
           </Button>
         </StackItem>
       </Stack>
     );
   }
-
-  const isCompleted = latestAssessment.status === "completed";
 
   return (
     <Stack hasGutter>
@@ -82,14 +94,8 @@ export const ProductRiskAssessment: React.FC<ProductRiskAssessmentProps> = ({
       <StackItem isFilled>
         <AssessmentWizard
           riskAssessmentId={latestAssessment.id}
-          resultsContent={
-            isCompleted ? (
-              <AssessmentResults
-                assessment={latestAssessment}
-                onStartNewAssessment={handleStartNewAssessment}
-              />
-            ) : undefined
-          }
+          results={results}
+          onStartNewAssessment={handleStartNewAssessment}
         />
       </StackItem>
     </Stack>

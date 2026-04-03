@@ -8,51 +8,51 @@ import {
   Content,
   Flex,
   FlexItem,
-  Spinner,
   Stack,
   StackItem,
 } from "@patternfly/react-core";
 
-import { StateError } from "@app/components/StateError";
-import type { RiskAssessment } from "@app/queries/risk-assessments";
-import {
-  useDownloadAssessmentDocument,
-  useFetchRiskAssessmentResults,
+import type {
+  CategoryResult,
+  RiskAssessmentResults,
 } from "@app/queries/risk-assessments";
+import { useDownloadAssessmentDocument } from "@app/queries/risk-assessments";
 
+import type { AssessmentCategory } from "./assessment-category-step";
 import { CriteriaSummaryTable } from "./criteria-summary-table";
 
-interface AssessmentResultsProps {
-  assessment: RiskAssessment;
+interface AssessmentCategoryResultsProps {
+  /** The assessment ID for document download. */
+  assessmentId: string;
+  /** The category definition (key, name, description). */
+  category: AssessmentCategory;
+  /** The per-category result data including criteria. */
+  categoryResult: CategoryResult;
+  /** The full results for scoring lookup. */
+  overallResults: RiskAssessmentResults;
   onStartNewAssessment: () => void;
 }
 
-/** Displays overall score card and criteria summary for a completed assessment. */
-export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
-  assessment,
+/** Displays per-category score card and criteria summary for a processed category. */
+export const AssessmentCategoryResults: React.FC<
+  AssessmentCategoryResultsProps
+> = ({
+  assessmentId,
+  category,
+  categoryResult,
+  overallResults,
   onStartNewAssessment,
 }) => {
-  const { results, isFetching, fetchError } = useFetchRiskAssessmentResults(
-    assessment.id,
+  const { download } = useDownloadAssessmentDocument(
+    assessmentId,
+    category.key,
   );
-  const { download } = useDownloadAssessmentDocument(assessment.id, "sar");
 
-  if (isFetching) {
-    return <Spinner aria-label="Loading assessment results" />;
-  }
-
-  if (fetchError) {
-    return <StateError />;
-  }
-
-  if (!results) {
-    return null;
-  }
-
-  const scorePercent = results.scoring?.overall.score ?? results.overallScore;
-  const riskLevel = results.scoring?.overall.riskLevel;
-  const updatedDate = new Date(assessment.updatedAt).toLocaleDateString();
-  const allCriteria = results.categories.flatMap((cat) => cat.criteria);
+  const categoryScore = overallResults.scoring?.categories.find(
+    (c) => c.category === category.key,
+  );
+  const scorePercent = categoryScore?.score ?? overallResults.overallScore;
+  const riskLevel = categoryScore?.riskLevel;
 
   return (
     <Stack hasGutter>
@@ -83,7 +83,6 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
                     </span>
                   )}
                 </Content>
-                <Content component="small">Completed on {updatedDate}</Content>
               </StackItem>
               <StackItem>
                 <Flex gap={{ default: "gapSm" }}>
@@ -103,12 +102,12 @@ export const AssessmentResults: React.FC<AssessmentResultsProps> = ({
           </CardBody>
         </Card>
       </StackItem>
-      {allCriteria.length > 0 && (
+      {categoryResult.criteria.length > 0 && (
         <StackItem>
           <Card>
             <CardTitle>Criteria Summary</CardTitle>
             <CardBody>
-              <CriteriaSummaryTable criteria={allCriteria} />
+              <CriteriaSummaryTable criteria={categoryResult.criteria} />
             </CardBody>
           </Card>
         </StackItem>
