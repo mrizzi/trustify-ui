@@ -110,7 +110,7 @@ export const AssessmentWizard: React.FC<AssessmentWizardProps> = ({
                       ? "var(--pf-t--global--color--brand--default)"
                       : "transparent",
                     color: isActive
-                      ? "var(--pf-t--global--color--nonstatus--white--default)"
+                      ? "#fff"
                       : "var(--pf-t--global--color--200)",
                     border: isActive
                       ? "none"
