@@ -45,7 +45,8 @@ export const ProductRiskAssessment: React.FC<ProductRiskAssessmentProps> = ({
     return <StateError />;
   }
 
-  const latestAssessment = assessments.length > 0 ? assessments[0] : undefined;
+  const latestAssessment =
+    assessments.length > 0 ? assessments[assessments.length - 1] : undefined;
 
   if (!latestAssessment) {
     return (
