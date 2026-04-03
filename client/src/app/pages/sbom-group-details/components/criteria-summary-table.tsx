@@ -12,6 +12,11 @@ interface CriteriaSummaryTableProps {
   criteria: CriterionResult[];
 }
 
+/** Format a snake_case criterion key into a readable label. */
+const formatCriterionLabel = (key: string) => {
+  return key.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+};
+
 /** Map a completeness string to a PatternFly Label color. */
 const completenessColor = (value: string) => {
   switch (value) {
@@ -52,7 +57,7 @@ const RiskLevelDisplay: React.FC<{ value: string }> = ({ value }) => {
       flexWrap={{ default: "nowrap" }}
     >
       <FlexItem>{icon}</FlexItem>
-      <FlexItem>{value}</FlexItem>
+      <FlexItem>{formatCriterionLabel(value)}</FlexItem>
     </Flex>
   );
 };
@@ -73,10 +78,12 @@ export const CriteriaSummaryTable: React.FC<CriteriaSummaryTableProps> = ({
       <Tbody>
         {criteria.map((item) => (
           <Tr key={item.id}>
-            <Td dataLabel="Criterion">{item.criterion}</Td>
+            <Td dataLabel="Criterion">
+              {formatCriterionLabel(item.criterion)}
+            </Td>
             <Td dataLabel="Completeness">
               <Label color={completenessColor(item.completeness)}>
-                {item.completeness}
+                {formatCriterionLabel(item.completeness)}
               </Label>
             </Td>
             <Td dataLabel="Risk Level">
