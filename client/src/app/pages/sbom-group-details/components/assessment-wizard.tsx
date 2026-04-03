@@ -1,5 +1,6 @@
 import React from "react";
 
+import { useQueryClient } from "@tanstack/react-query";
 import axios, { type AxiosRequestConfig } from "axios";
 
 import {
@@ -15,6 +16,7 @@ import {
 import CheckCircleIcon from "@patternfly/react-icons/dist/esm/icons/check-circle-icon";
 
 import { FORM_DATA_FILE_KEY } from "@app/Constants";
+import { RiskAssessmentsQueryKey } from "@app/queries/risk-assessments";
 
 import {
   ASSESSMENT_CATEGORIES,
@@ -50,6 +52,7 @@ export const AssessmentWizard: React.FC<AssessmentWizardProps> = ({
   riskAssessmentId,
   resultsContent,
 }) => {
+  const queryClient = useQueryClient();
   const [activeStep, setActiveStep] = React.useState(0);
   const [completedSteps, setCompletedSteps] = React.useState<Set<number>>(
     new Set(),
@@ -105,8 +108,11 @@ export const AssessmentWizard: React.FC<AssessmentWizardProps> = ({
                     config,
                   )
                 }
-                onUploadSuccess={() => {
+                onUploadSuccess={async () => {
                   setCompletedSteps((prev) => new Set(prev).add(activeStep));
+                  await queryClient.invalidateQueries({
+                    queryKey: [RiskAssessmentsQueryKey],
+                  });
                 }}
               />
             )}
