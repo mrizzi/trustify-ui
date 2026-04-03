@@ -75,21 +75,50 @@ export const AssessmentWizard: React.FC<AssessmentWizardProps> = ({
       <FlexItem>
         <Nav aria-label="Assessment categories" variant="default">
           <NavList>
-            {ASSESSMENT_CATEGORIES.map((category, index) => (
-              <NavItem
-                key={category.key}
-                itemId={index}
-                isActive={activeStep === index}
-                onClick={() => !resultsContent && setActiveStep(index)}
-                icon={
-                  completedSteps.has(index) ? (
-                    <CheckCircleIcon color="var(--pf-t--global--color--status--success--default)" />
-                  ) : undefined
-                }
-              >
-                {`${index + 1}. ${category.name}`}
-              </NavItem>
-            ))}
+            {ASSESSMENT_CATEGORIES.map((category, index) => {
+              const isActive = activeStep === index;
+              const isCompleted = completedSteps.has(index);
+
+              const stepIcon = isCompleted ? (
+                <CheckCircleIcon color="var(--pf-t--global--color--status--success--default)" />
+              ) : (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 24,
+                    height: 24,
+                    borderRadius: "50%",
+                    fontSize: "var(--pf-t--global--font--size--sm)",
+                    fontWeight: "var(--pf-t--global--font--weight--bold)",
+                    backgroundColor: isActive
+                      ? "var(--pf-t--global--color--brand--default)"
+                      : "transparent",
+                    color: isActive
+                      ? "var(--pf-t--global--color--nonstatus--white--default)"
+                      : "var(--pf-t--global--color--200)",
+                    border: isActive
+                      ? "none"
+                      : "1px solid var(--pf-t--global--color--200)",
+                  }}
+                >
+                  {index + 1}
+                </span>
+              );
+
+              return (
+                <NavItem
+                  key={category.key}
+                  itemId={index}
+                  isActive={isActive}
+                  onClick={() => !resultsContent && setActiveStep(index)}
+                  icon={stepIcon}
+                >
+                  {category.name}
+                </NavItem>
+              );
+            })}
           </NavList>
         </Nav>
       </FlexItem>
