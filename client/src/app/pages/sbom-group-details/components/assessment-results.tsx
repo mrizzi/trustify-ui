@@ -16,7 +16,7 @@ import type {
   CategoryResult,
   RiskAssessmentResults,
 } from "@app/queries/risk-assessments";
-import { useDownloadAssessmentDocument } from "@app/queries/risk-assessments";
+import { useDownloadAssessmentReport } from "@app/queries/risk-assessments";
 
 import type { AssessmentCategory } from "./assessment-category-step";
 import { CriteriaSummaryTable } from "./criteria-summary-table";
@@ -43,10 +43,7 @@ export const AssessmentCategoryResults: React.FC<
   overallResults,
   onStartNewAssessment,
 }) => {
-  const { download } = useDownloadAssessmentDocument(
-    assessmentId,
-    category.key,
-  );
+  const { download } = useDownloadAssessmentReport(assessmentId);
 
   const categoryScore = overallResults.scoring?.categories.find(
     (c) => c.category === category.key,

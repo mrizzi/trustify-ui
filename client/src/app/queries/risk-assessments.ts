@@ -139,27 +139,21 @@ export const useDeleteRiskAssessmentMutation = (
   });
 };
 
-/** Download a risk assessment document for a specific category. */
-export const useDownloadAssessmentDocument = (
-  assessmentId?: string,
-  category?: string,
-) => {
+/** Download the generated PDF report for a risk assessment. */
+export const useDownloadAssessmentReport = (assessmentId?: string) => {
   const download = async () => {
-    if (!assessmentId || !category) return;
+    if (!assessmentId) return;
     const response = await axios.get(
-      `${RISK_ASSESSMENTS}/${assessmentId}/document/${category}`,
+      `${RISK_ASSESSMENTS}/${assessmentId}/report`,
       {
         responseType: "blob",
-        headers: { Accept: "application/octet-stream" },
+        headers: { Accept: "application/pdf" },
       },
     );
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute(
-      "download",
-      `risk-assessment-${assessmentId}-${category}`,
-    );
+    link.setAttribute("download", `risk-assessment-${assessmentId}.pdf`);
     document.body.appendChild(link);
     link.click();
     link.remove();
