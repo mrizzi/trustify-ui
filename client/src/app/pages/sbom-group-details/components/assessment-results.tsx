@@ -38,18 +38,15 @@ export const AssessmentCategoryResults: React.FC<
   AssessmentCategoryResultsProps
 > = ({
   assessmentId,
-  category,
+  category: _category,
   categoryResult,
   overallResults,
   onStartNewAssessment,
 }) => {
   const { download } = useDownloadAssessmentReport(assessmentId);
 
-  const categoryScore = overallResults.scoring?.categories.find(
-    (c) => c.category === category.key,
-  );
-  const scorePercent = categoryScore?.score ?? overallResults.overallScore;
-  const riskLevel = categoryScore?.riskLevel;
+  const scorePercent = overallResults.overallScore;
+  const riskLevel = overallResults.scoring?.overall.riskLevel;
 
   return (
     <Stack hasGutter>
