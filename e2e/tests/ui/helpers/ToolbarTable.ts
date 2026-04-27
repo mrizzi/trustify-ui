@@ -308,19 +308,20 @@ export class ToolbarTable {
     const headerRow = table[0];
     const dataRow = table.slice(1);
     const index = headerRow.indexOf(header);
-    let row = 0;
     if (index < 0) {
       fail("Given header not found");
     }
+    let isDate = false;
+    let isCVSS = false;
+    let isCVE = false;
     for (const data of dataRow) {
-      if (data[index] != null && data[index] !== ``) {
-        break;
+      const val = data[index];
+      if (val != null && val !== ``) {
+        if (!isDate) isDate = this.isValidDate(val);
+        if (!isCVSS) isCVSS = this.isCVSS(val);
+        if (!isCVE) isCVE = this.isCVE(val);
       }
-      row += 1;
     }
-    const isDate = this.isValidDate(dataRow[row][index]);
-    const isCVSS = this.isCVSS(dataRow[row][index]);
-    const isCVE = this.isCVE(dataRow[row][index]);
     const sortedRows = [...dataRow].sort((rowA, rowB) => {
       // biome-ignore lint/suspicious/noExplicitAny: allowed
       let compare: any;
@@ -366,7 +367,7 @@ export class ToolbarTable {
    * @returns true if the given input is in CVSS format
    */
   isCVSS(cvssString: string): boolean {
-    const cvssRegex = /^.+\((\d*\.*\d+?)\)$/;
+    const cvssRegex = /^.+\((\d*\.*\d+?)\)/;
     return !!cvssRegex.test(cvssString);
   }
 
@@ -386,11 +387,12 @@ export class ToolbarTable {
    * @returns CVSS score if the given input is in CVSS format
    */
   getCVSS(cvssString: string): number {
-    const cvssRegex = /^.+\((\d*\.*\d+?)\)$/;
-    // biome-ignore lint/style/noNonNullAssertion: allowed
-    const cvssScore = cvssString.match(cvssRegex)!;
-    // biome-ignore lint/style/noNonNullAssertion: allowed
-    return parseFloat(cvssScore[1]!);
+    const cvssRegex = /^.+\((\d*\.*\d+?)\)/;
+    const cvssScore = cvssString.match(cvssRegex);
+    if (!cvssScore) {
+      return 0;
+    }
+    return parseFloat(cvssScore[1]);
   }
 
   /**
