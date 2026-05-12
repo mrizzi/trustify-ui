@@ -12,15 +12,15 @@ import {
   useTableControlProps,
   useTableControlState,
 } from "@app/hooks/table-controls";
-import { useFetchLicenses } from "@app/queries/licenses";
-import type { LicenseText } from "@app/client";
+import { useFetchAllModels } from "@app/queries/models";
+import type { SbomModel } from "@app/client";
 
-interface ILicenseSearchContext {
+interface IModelSearchContext {
   tableControls: ITableControls<
-    LicenseText,
-    "name" | "packages" | "sboms",
+    SbomModel,
+    "name" | "suppliedBy" | "licenses",
     "name",
-    "" | "packages" | "sboms",
+    "",
     string
   >;
 
@@ -29,32 +29,32 @@ interface ILicenseSearchContext {
   fetchError: AxiosError | null;
 }
 
-const contextDefaultValue = {} as ILicenseSearchContext;
+const contextDefaultValue = {} as IModelSearchContext;
 
-export const LicenseSearchContext =
-  React.createContext<ILicenseSearchContext>(contextDefaultValue);
+export const ModelSearchContext =
+  React.createContext<IModelSearchContext>(contextDefaultValue);
 
-interface ILicenseProvider {
+interface IModelProvider {
   children: React.ReactNode;
 }
 
-export const LicenseSearchProvider: React.FunctionComponent<
-  ILicenseProvider
-> = ({ children }) => {
+export const ModelSearchProvider: React.FunctionComponent<IModelProvider> = ({
+  children,
+}) => {
   const tableControlState = useTableControlState<
-    LicenseText,
-    "name" | "packages" | "sboms",
+    SbomModel,
+    "name" | "suppliedBy" | "licenses",
     "name",
-    "" | "packages" | "sboms",
+    "",
     string
   >({
-    tableName: "license",
-    persistenceKeyPrefix: TablePersistenceKeyPrefixes.licenses,
+    tableName: "model",
+    persistenceKeyPrefix: TablePersistenceKeyPrefixes.models,
     persistTo: "urlParams",
     columnNames: {
       name: "Name",
-      packages: "Packages",
-      sboms: "SBOMs",
+      suppliedBy: "Supplied by",
+      licenses: "License",
     },
     isPaginationEnabled: true,
     isSortEnabled: true,
@@ -67,8 +67,8 @@ export const LicenseSearchProvider: React.FunctionComponent<
     filterCategories: [
       {
         categoryKey: FILTER_TEXT_CATEGORY_KEY,
-        title: "Name",
-        placeholderText: "Search by license name",
+        title: "Filter",
+        placeholderText: "Search",
         type: FilterType.search,
       },
     ],
@@ -76,15 +76,15 @@ export const LicenseSearchProvider: React.FunctionComponent<
   });
 
   const {
-    result: { data: licenses, total: totalItemCount },
+    result: { data: models, total: totalItemCount },
     isFetching,
     fetchError,
-  } = useFetchLicenses(
+  } = useFetchAllModels(
     {
       ...getHubRequestParams({
         ...tableControlState,
         hubSortFieldKeys: {
-          name: "license",
+          name: "name",
         },
       }),
       total: true,
@@ -94,16 +94,16 @@ export const LicenseSearchProvider: React.FunctionComponent<
 
   const tableControls = useTableControlProps({
     ...tableControlState,
-    idProperty: "license",
-    currentPageItems: licenses,
+    idProperty: "id",
+    currentPageItems: models,
     totalItemCount,
     isLoading: isFetching,
   });
   return (
-    <LicenseSearchContext.Provider
+    <ModelSearchContext.Provider
       value={{ totalItemCount, isFetching, fetchError, tableControls }}
     >
       {children}
-    </LicenseSearchContext.Provider>
+    </ModelSearchContext.Provider>
   );
 };
