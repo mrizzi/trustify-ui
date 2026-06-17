@@ -12,6 +12,7 @@ import { LazyRouteElement } from "@app/components/LazyRouteElement";
 import App from "./App";
 import { RouteErrorBoundary } from "./components/RouteErrorBoundary";
 
+/* eslint-disable react-refresh/only-export-components */
 const Home = lazy(() => import("./pages/home"));
 
 // Advisory
@@ -45,6 +46,7 @@ const ImporterList = lazy(() => import("./pages/importer-list"));
 const LicenseList = lazy(() => import("./pages/license-list"));
 const ModelList = lazy(() => import("./pages/model-list"));
 const NotFound = lazy(() => import("./pages/not-found"));
+/* eslint-enable react-refresh/only-export-components */
 
 export enum PathParam {
   ADVISORY_ID = "advisoryId",
@@ -75,7 +77,7 @@ export const Paths = {
   sbomGroupDetails: `/sbom-groups/:${PathParam.SBOM_GROUP_ID}`,
 } as const;
 
-export const usePathFromParams = (
+export const getPathFromParams = (
   params: Params<string>,
   pathParam: PathParam,
 ) => {
@@ -116,7 +118,7 @@ export const AppRoutes = createBrowserRouter([
         ),
         errorElement: <RouteErrorBoundary />,
         loader: async ({ params }) => {
-          const advisoryId = usePathFromParams(params, PathParam.ADVISORY_ID);
+          const advisoryId = getPathFromParams(params, PathParam.ADVISORY_ID);
           const response = await queryClient.ensureQueryData(
             advisoryByIdQueryOptions(advisoryId),
           );
@@ -177,7 +179,7 @@ export const AppRoutes = createBrowserRouter([
         ),
         errorElement: <RouteErrorBoundary />,
         loader: async ({ params }) => {
-          const packageId = usePathFromParams(params, PathParam.PACKAGE_ID);
+          const packageId = getPathFromParams(params, PathParam.PACKAGE_ID);
           const response = await queryClient.ensureQueryData(
             packageByIdQueryOptions(packageId),
           );
@@ -202,7 +204,7 @@ export const AppRoutes = createBrowserRouter([
         ),
         errorElement: <RouteErrorBoundary />,
         loader: async ({ params }) => {
-          const sbomId = usePathFromParams(params, PathParam.SBOM_ID);
+          const sbomId = getPathFromParams(params, PathParam.SBOM_ID);
           const response = await queryClient.ensureQueryData(
             sbomByIdQueryOptions(sbomId),
           );
@@ -251,7 +253,7 @@ export const AppRoutes = createBrowserRouter([
         ),
         errorElement: <RouteErrorBoundary />,
         loader: async ({ params }) => {
-          const vulnerabilityId = usePathFromParams(
+          const vulnerabilityId = getPathFromParams(
             params,
             PathParam.VULNERABILITY_ID,
           );
@@ -282,7 +284,7 @@ export const AppRoutes = createBrowserRouter([
         ),
         errorElement: <RouteErrorBoundary />,
         loader: async ({ params }) => {
-          const sbomGroupId = usePathFromParams(
+          const sbomGroupId = getPathFromParams(
             params,
             PathParam.SBOM_GROUP_ID,
           );
