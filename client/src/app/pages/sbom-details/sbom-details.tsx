@@ -37,7 +37,7 @@ import {
 import { PathParam, Paths, useRouteParams } from "@app/Routes";
 import type { SbomHead } from "@app/client";
 import { ConfirmDialog } from "@app/components/ConfirmDialog";
-import { LoadingWrapper } from "@app/components/LoadingWrapper";
+import { LoadingWrapper } from "@tsd-ui/core";
 import { NotificationsContext } from "@app/components/NotificationsContext";
 import { useDownload } from "@app/hooks/domain-controls/useDownload";
 import { useTabControls } from "@app/hooks/tab-controls";
@@ -100,13 +100,13 @@ export const SbomDetails: React.FC = () => {
     tabKeys: ["info", "packages", "vulnerabilities", "models"],
   });
 
-  const infoTabRef = React.useRef<HTMLElement>();
-  const packagesTabRef = React.useRef<HTMLElement>();
-  const vulnerabilitiesTabRef = React.useRef<HTMLElement>();
-  const modelsTabRef = React.useRef<HTMLElement>();
+  const infoTabRef = React.useRef<HTMLElement>(null);
+  const packagesTabRef = React.useRef<HTMLElement>(null);
+  const vulnerabilitiesTabRef = React.useRef<HTMLElement>(null);
+  const modelsTabRef = React.useRef<HTMLElement>(null);
 
   // Tabs popover refs
-  const vulnerabilitiesTabPopoverRef = React.useRef<HTMLElement>();
+  const vulnerabilitiesTabPopoverRef = React.useRef<HTMLElement>(null);
 
   return (
     <>

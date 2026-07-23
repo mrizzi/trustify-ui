@@ -15,16 +15,13 @@ import {
 
 import type { Group } from "@app/client";
 import { ConfirmDialog } from "@app/components/ConfirmDialog.tsx";
-import { LoadingWrapper } from "@app/components/LoadingWrapper";
+import { LoadingWrapper } from "@tsd-ui/core";
 import { NotificationsContext } from "@app/components/NotificationsContext";
-import {
-  readOnlyActionProps,
-  ReadOnlyContext,
-} from "@app/components/ReadOnlyContext";
+import { ReadOnlyContext } from "@app/components/ReadOnlyContext";
 import { SimplePagination } from "@app/components/SimplePagination";
 import { TableCellError } from "@app/components/TableCellError";
 import { ConditionalTableBody } from "@app/components/TableControls";
-import { groupDeleteDialogProps } from "@app/Constants";
+import { groupDeleteDialogProps } from "./utils";
 import {
   useDeleteSbomGroupMutation,
   useFetchSBOMGroups,
@@ -111,14 +108,20 @@ export const SbomGroupsTable: React.FC = () => {
         inProgress={isDeletingGroup}
         titleIconVariant="warning"
         isOpen={!!groupToDelete}
-        confirmBtnVariant={ButtonVariant.danger}
-        confirmBtnLabel="Delete"
-        cancelBtnLabel="Cancel"
+        confirmBtnVariant={
+          !groupToDelete?.number_of_groups
+            ? ButtonVariant.danger
+            : ButtonVariant.primary
+        }
+        confirmBtnLabel={!groupToDelete?.number_of_groups ? "Delete" : "Close"}
+        cancelBtnLabel={!groupToDelete?.number_of_groups ? "Cancel" : ""}
         onCancel={() => setGroupToDelete(null)}
         onClose={() => setGroupToDelete(null)}
         onConfirm={() => {
-          if (groupToDelete) {
+          if (groupToDelete && !groupToDelete?.number_of_groups) {
             deleteGroup(groupToDelete);
+          } else {
+            setGroupToDelete(null);
           }
         }}
       />
@@ -155,19 +158,18 @@ const SbomGroupRow: React.FC<{
     isExpanded || hasBeenExpanded.current,
   );
 
-  const { isReadOnly } = React.useContext(ReadOnlyContext);
+  const { areMutationsDisabled } = React.useContext(ReadOnlyContext);
 
   const actions: IAction[] = [
     {
       title: "Edit",
       onClick: () => onEdit(node),
-      ...readOnlyActionProps(isReadOnly),
+      isDisabled: areMutationsDisabled,
     },
     {
       title: "Delete",
       onClick: () => onDelete(node),
-      isDisabled: !isReadOnly && !!node.number_of_groups,
-      ...readOnlyActionProps(isReadOnly),
+      isDisabled: areMutationsDisabled,
     },
   ];
 

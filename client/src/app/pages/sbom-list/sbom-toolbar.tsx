@@ -6,17 +6,13 @@ import {
   Toolbar,
   ToolbarContent,
   ToolbarItem,
-  Tooltip,
 } from "@patternfly/react-core";
 
 import type { Group } from "@app/client";
 import { FilterToolbar } from "@app/components/FilterToolbar";
 import { KebabDropdown } from "@app/components/KebabDropdown";
 import { ReadOnlyButton } from "@app/components/ReadOnlyButton";
-import {
-  READ_ONLY_TOOLTIP,
-  ReadOnlyContext,
-} from "@app/components/ReadOnlyContext";
+import { ReadOnlyContext } from "@app/components/ReadOnlyContext";
 import { SimplePagination } from "@app/components/SimplePagination";
 import { ToolbarBulkSelector } from "@app/components/ToolbarBulkSelector";
 import { Paths } from "@app/Routes";
@@ -35,7 +31,7 @@ export const SbomToolbar: React.FC<SbomToolbarProps> = ({
   showActions,
 }) => {
   const navigate = useNavigate();
-  const { isReadOnly } = React.useContext(ReadOnlyContext);
+  const { areMutationsDisabled } = React.useContext(ReadOnlyContext);
 
   // Create Form Modal
   const [saveGroupModalState, setSaveGroupModalState] = React.useState<
@@ -104,20 +100,14 @@ export const SbomToolbar: React.FC<SbomToolbarProps> = ({
                 <KebabDropdown
                   ariaLabel="SBOM actions"
                   dropdownItems={[
-                    <Tooltip
-                      key="upload-sbom-tooltip"
-                      content={READ_ONLY_TOOLTIP}
-                      trigger={isReadOnly ? "mouseenter focus" : "manual"}
+                    <DropdownItem
+                      key="upload-sbom"
+                      component="button"
+                      isDisabled={areMutationsDisabled}
+                      onClick={() => navigate(Paths.sbomUpload)}
                     >
-                      <DropdownItem
-                        key="upload-sbom"
-                        component="button"
-                        isAriaDisabled={isReadOnly}
-                        onClick={() => navigate(Paths.sbomUpload)}
-                      >
-                        Upload SBOM
-                      </DropdownItem>
-                    </Tooltip>,
+                      Upload SBOM
+                    </DropdownItem>,
                     <DropdownItem
                       key="scan-sbom"
                       component="button"

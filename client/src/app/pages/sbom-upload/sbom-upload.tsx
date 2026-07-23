@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-import type { AxiosError, AxiosResponse } from "axios";
+import type { AxiosResponse } from "axios";
 
 import {
   Breadcrumb,
@@ -19,9 +19,10 @@ import { ReadOnlyContext } from "@app/components/ReadOnlyContext";
 import { UploadFiles } from "@app/components/UploadFiles";
 import { useUploadSBOM } from "@app/queries/sboms";
 import { Paths } from "@app/Routes";
+import { getAxiosErrorMessage } from "@app/utils/utils";
 
 export const SbomUpload: React.FC = () => {
-  const { isReadOnly } = React.useContext(ReadOnlyContext);
+  const { areMutationsDisabled } = React.useContext(ReadOnlyContext);
   const { uploads, handleUpload, handleRemoveUpload } = useUploadSBOM();
 
   return (
@@ -35,7 +36,7 @@ export const SbomUpload: React.FC = () => {
           <BreadcrumbItem isActive>Upload SBOM</BreadcrumbItem>
         </Breadcrumb>
       </PageSection>
-      {isReadOnly ? (
+      {areMutationsDisabled ? (
         <PageSection>
           <EmptyState
             headingLevel="h1"
@@ -74,11 +75,7 @@ export const SbomUpload: React.FC = () => {
               ) => {
                 return `${response.data.document_id} uploaded`;
               }}
-              extractErrorMessage={(error: AxiosError) =>
-                error.response?.data
-                  ? error.message
-                  : "Error while uploading file"
-              }
+              extractErrorMessage={getAxiosErrorMessage}
             />
           </PageSection>
         </>
