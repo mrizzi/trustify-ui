@@ -14,17 +14,37 @@ export const getAxiosErrorMessage = (axiosError: AxiosError<any>) => {
 
   const error = typeof data?.error === "string" ? data.error : undefined;
   const message = typeof data?.message === "string" ? data.message : undefined;
-  const details = typeof data?.details === "string" ? data.details : undefined;
+
+  // Prefer an inline details string; fall back to extracting finding messages
+  // from validation reports (e.g. ValidationRejected responses).
+  let details: string | undefined;
+  if (typeof data?.details === "string") {
+    details = data.details;
+  } else if (Array.isArray(data?.validation)) {
+    const msgs: string[] = [];
+    for (const report of data.validation) {
+      if (Array.isArray(report?.findings)) {
+        for (const f of report.findings) {
+          if (typeof f?.message === "string") {
+            msgs.push(f.message);
+          }
+        }
+      }
+    }
+    if (msgs.length > 0) {
+      details = msgs.join("\n");
+    }
+  }
 
   if (error && message) {
     const base = `${error}: ${message}`;
     return details ? `${base}\n${details}` : base;
   }
   if (message) {
-    return message;
+    return details ? `${message}\n${details}` : message;
   }
   if (error) {
-    return error;
+    return details ? `${error}\n${details}` : error;
   }
 
   if (typeof data === "string") {
@@ -117,6 +137,34 @@ export const decomposePurl = (purl: string) => {
   }
 };
 
+/** Compare two PURLs by type, namespace, name, and version, ignoring qualifiers. */
+export const purlBaseEquals = (a: string, b: string): boolean => {
+  try {
+    const pa = PackageURL.fromString(a);
+    const pb = PackageURL.fromString(b);
+    return (
+      pa.type === pb.type &&
+      pa.namespace === pb.namespace &&
+      pa.name === pb.name &&
+      pa.version === pb.version
+    );
+  } catch {
+    return a === b;
+  }
+};
+
+/** Decode a PURL for display. Falls back to the original value if decoding fails. */
+export const decodePurl = (purl: string | null | undefined): string => {
+  if (purl == null) {
+    return "";
+  }
+  try {
+    return decodeURIComponent(purl);
+  } catch {
+    return purl;
+  }
+};
+
 export const getString = (input: string | (() => string)) =>
   typeof input === "function" ? input() : input;
 
@@ -129,4 +177,30 @@ export const getFilenameFromContentDisposition = (
 
 export const parseBooleanIfPossible = (value?: string): boolean => {
   return value?.toLocaleLowerCase() === "true";
+};
+
+export interface ComparatorOptions {
+  locale?: string;
+  direction?: "asc" | "desc";
+  nulls?: "first" | "last";
+}
+
+/**
+ * Creates a reusable comparator function with baked-in locale, direction,
+ * and null-positioning configuration. Uses `Intl.Collator` internally for
+ * optimal performance when sorting large arrays.
+ */
+export const createComparator = (opts: ComparatorOptions = {}) => {
+  const { locale = "en", direction = "asc", nulls = "first" } = opts;
+  const collator = new Intl.Collator(locale, { numeric: true });
+  const dir = direction === "desc" ? -1 : 1;
+
+  return (a: unknown, b: unknown): number => {
+    if (a == null && b == null) return 0;
+    if (a == null) return nulls === "first" ? -1 : 1;
+    if (b == null) return nulls === "first" ? 1 : -1;
+
+    if (typeof a === "number" && typeof b === "number") return (a - b) * dir;
+    return collator.compare(String(a), String(b)) * dir;
+  };
 };

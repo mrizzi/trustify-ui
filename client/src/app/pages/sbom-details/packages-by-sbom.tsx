@@ -2,11 +2,14 @@ import type React from "react";
 import { generatePath, Link } from "react-router-dom";
 
 import {
+  Label,
+  LabelGroup,
   List,
   ListItem,
   Toolbar,
   ToolbarContent,
   ToolbarItem,
+  Tooltip,
 } from "@patternfly/react-core";
 import spacing from "@patternfly/react-styles/css/utilities/Spacing/spacing";
 import {
@@ -34,12 +37,15 @@ import {
   useTableControlState,
 } from "@app/hooks/table-controls";
 import { useFetchPackagesBySbomId } from "@app/queries/packages";
+import { useFetchRecommendations } from "@app/queries/recommendations";
 import { useFetchSbomsLicenseIds } from "@app/queries/sboms";
 import { Paths } from "@app/Routes";
+import { decodePurl, decomposePurl, purlBaseEquals } from "@app/utils/utils";
 
 import { PackageVulnerabilities } from "../package-list/components/PackageVulnerabilities";
 import { WithPackage } from "@app/components/WithPackage";
 import { VulnerabilityGallery } from "@app/components/VulnerabilityGallery";
+import { useMemo } from "react";
 
 const renderLicenseWithMappings = (
   license: string,
@@ -64,6 +70,7 @@ export const PackagesBySbom: React.FC<PackagesProps> = ({ sbomId }) => {
       version: "Version",
       vulnerabilities: "Vulnerabilities",
       licenses: "Licenses",
+      remediation: "Remediation",
       purls: "PURLs",
       cpes: "CPEs",
     },
@@ -108,6 +115,16 @@ export const PackagesBySbom: React.FC<PackagesProps> = ({ sbomId }) => {
     }),
     total: true,
   });
+
+  const purls = useMemo(
+    () =>
+      packages
+        .map((item) => item.purl[0]?.purl)
+        .filter((p): p is string => Boolean(p)),
+    [packages],
+  );
+
+  const { recommendationsMap } = useFetchRecommendations(purls);
 
   const tableControls = useTableControlProps({
     ...tableControlState,
@@ -157,6 +174,7 @@ export const PackagesBySbom: React.FC<PackagesProps> = ({ sbomId }) => {
               <Th {...getThProps({ columnKey: "version" })} />
               <Th {...getThProps({ columnKey: "vulnerabilities" })} />
               <Th {...getThProps({ columnKey: "licenses" })} />
+              <Th {...getThProps({ columnKey: "remediation" })} />
               <Th {...getThProps({ columnKey: "purls" })} />
               <Th {...getThProps({ columnKey: "cpes" })} />
             </TableHeaderContentWithControls>
@@ -169,6 +187,18 @@ export const PackagesBySbom: React.FC<PackagesProps> = ({ sbomId }) => {
           numRenderedColumns={numRenderedColumns}
         >
           {currentPageItems?.map((item, rowIndex) => {
+            const currentPurl = item.purl[0]?.purl;
+            const rowRecommendations =
+              recommendationsMap.get(currentPurl ?? "") ?? [];
+            const isRemediationApplied = rowRecommendations.some((rec) =>
+              purlBaseEquals(rec.package, currentPurl ?? ""),
+            );
+            const recommendedVersionSet = new Set(
+              rowRecommendations.map(
+                (rec) => decomposePurl(rec.package)?.version ?? rec.package,
+              ),
+            );
+
             return (
               <Tbody key={item.id} isExpanded={isCellExpanded(item)}>
                 <Tr {...getTrProps({ item })}>
@@ -181,7 +211,7 @@ export const PackagesBySbom: React.FC<PackagesProps> = ({ sbomId }) => {
                       {[item.name, item.group].filter(Boolean).join("/")}
                     </Td>
                     <Td
-                      width={15}
+                      width={10}
                       modifier="truncate"
                       {...getTdProps({ columnKey: "version" })}
                     >
@@ -216,7 +246,7 @@ export const PackagesBySbom: React.FC<PackagesProps> = ({ sbomId }) => {
                       )}
                     </Td>
                     <Td
-                      width={20}
+                      width={15}
                       modifier="breakWord"
                       {...getTdProps({
                         columnKey: "licenses",
@@ -226,6 +256,101 @@ export const PackagesBySbom: React.FC<PackagesProps> = ({ sbomId }) => {
                       })}
                     >
                       {item.licenses.length} Licenses
+                    </Td>
+                    <Td
+                      width={15}
+                      {...getTdProps({ columnKey: "remediation" })}
+                    >
+                      {isRemediationApplied ? (
+                        <Label color="blue" isCompact>
+                          Applied
+                        </Label>
+                      ) : item.purl[0] ? (
+                        <WithPackage packageId={item.purl[0].uuid}>
+                          {(pkg) => {
+                            const fixedVersions: string[] = [];
+                            for (const advisory of pkg?.advisories ?? []) {
+                              for (const pkgStatus of advisory.status ?? []) {
+                                const versions = (
+                                  pkgStatus as unknown as {
+                                    fixed_versions?: string[];
+                                  }
+                                ).fixed_versions;
+                                if (versions) {
+                                  for (const v of versions) {
+                                    if (!fixedVersions.includes(v))
+                                      fixedVersions.push(v);
+                                  }
+                                }
+                              }
+                            }
+                            const vendorVersions = rowRecommendations.map(
+                              (rec) =>
+                                decomposePurl(rec.package)?.version ??
+                                rec.package,
+                            );
+                            const nonVendorFixedVersions = fixedVersions.filter(
+                              (v) => !recommendedVersionSet.has(v),
+                            );
+                            if (
+                              vendorVersions.length === 0 &&
+                              nonVendorFixedVersions.length === 0
+                            ) {
+                              return null;
+                            }
+                            return (
+                              <LabelGroup>
+                                {vendorVersions.map((v) => (
+                                  <Tooltip
+                                    key={v}
+                                    content="Vendor backport — security fix applied in the same version stream (no major upgrade required)."
+                                  >
+                                    <Label
+                                      color="blue"
+                                      variant="outline"
+                                      isCompact
+                                    >
+                                      {v}
+                                    </Label>
+                                  </Tooltip>
+                                ))}
+                                {nonVendorFixedVersions.map((v) => (
+                                  <Tooltip
+                                    key={v}
+                                    content="Version upgrade — move to this newer release to get the fix."
+                                  >
+                                    <Label
+                                      color="green"
+                                      variant="outline"
+                                      isCompact
+                                    >
+                                      {v}
+                                    </Label>
+                                  </Tooltip>
+                                ))}
+                              </LabelGroup>
+                            );
+                          }}
+                        </WithPackage>
+                      ) : rowRecommendations.length > 0 ? (
+                        <LabelGroup>
+                          {rowRecommendations.map((rec) => {
+                            const version =
+                              decomposePurl(rec.package)?.version ??
+                              rec.package;
+                            return (
+                              <Tooltip
+                                key={rec.package}
+                                content="Vendor backport — security fix applied in the same version stream (no major upgrade required)."
+                              >
+                                <Label color="blue" variant="outline" isCompact>
+                                  {version}
+                                </Label>
+                              </Tooltip>
+                            );
+                          })}
+                        </LabelGroup>
+                      ) : null}
                     </Td>
                     <Td
                       width={20}
@@ -243,14 +368,14 @@ export const PackagesBySbom: React.FC<PackagesProps> = ({ sbomId }) => {
                             packageId: item.purl[0].uuid,
                           })}
                         >
-                          {item.purl[0].purl}
+                          {decodePurl(item.purl[0].purl)}
                         </Link>
                       ) : (
                         `${item.purl.length} PURLs`
                       )}
                     </Td>
                     <Td
-                      width={20}
+                      width={15}
                       modifier="breakWord"
                       {...getTdProps({
                         columnKey: "cpes",
@@ -297,7 +422,7 @@ export const PackagesBySbom: React.FC<PackagesProps> = ({ sbomId }) => {
                                         packageId: e.uuid,
                                       })}
                                     >
-                                      {e.purl}
+                                      {decodePurl(e.purl)}
                                     </Link>
                                   </ListItem>
                                 );
